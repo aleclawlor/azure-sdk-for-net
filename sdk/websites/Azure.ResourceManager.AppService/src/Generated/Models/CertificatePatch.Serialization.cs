@@ -80,7 +80,7 @@ namespace Azure.ResourceManager.AppService.Models
             ResourceIdentifier id = default;
             string name = default;
             ResourceType type = default;
-            SystemData systemData = default;
+            Optional<SystemData> systemData = default;
             Optional<string> password = default;
             Optional<string> friendlyName = default;
             Optional<string> subjectName = default;
@@ -96,10 +96,10 @@ namespace Azure.ResourceManager.AppService.Models
             Optional<byte[]> cerBlob = default;
             Optional<string> publicKeyHash = default;
             Optional<HostingEnvironmentProfile> hostingEnvironmentProfile = default;
-            Optional<string> keyVaultId = default;
+            Optional<ResourceIdentifier> keyVaultId = default;
             Optional<string> keyVaultSecretName = default;
             Optional<KeyVaultSecretStatus> keyVaultSecretStatus = default;
-            Optional<string> serverFarmId = default;
+            Optional<ResourceIdentifier> serverFarmId = default;
             Optional<string> canonicalName = default;
             Optional<string> domainValidationMethod = default;
             foreach (var property in element.EnumerateObject())
@@ -126,6 +126,11 @@ namespace Azure.ResourceManager.AppService.Models
                 }
                 if (property.NameEquals("systemData"))
                 {
+                    if (property.Value.ValueKind == JsonValueKind.Null)
+                    {
+                        property.ThrowNonNullablePropertyIsNull();
+                        continue;
+                    }
                     systemData = JsonSerializer.Deserialize<SystemData>(property.Value.ToString());
                     continue;
                 }
@@ -255,7 +260,12 @@ namespace Azure.ResourceManager.AppService.Models
                         }
                         if (property0.NameEquals("keyVaultId"))
                         {
-                            keyVaultId = property0.Value.GetString();
+                            if (property0.Value.ValueKind == JsonValueKind.Null)
+                            {
+                                property0.ThrowNonNullablePropertyIsNull();
+                                continue;
+                            }
+                            keyVaultId = new ResourceIdentifier(property0.Value.GetString());
                             continue;
                         }
                         if (property0.NameEquals("keyVaultSecretName"))
@@ -275,7 +285,12 @@ namespace Azure.ResourceManager.AppService.Models
                         }
                         if (property0.NameEquals("serverFarmId"))
                         {
-                            serverFarmId = property0.Value.GetString();
+                            if (property0.Value.ValueKind == JsonValueKind.Null)
+                            {
+                                property0.ThrowNonNullablePropertyIsNull();
+                                continue;
+                            }
+                            serverFarmId = new ResourceIdentifier(property0.Value.GetString());
                             continue;
                         }
                         if (property0.NameEquals("canonicalName"))
@@ -292,7 +307,7 @@ namespace Azure.ResourceManager.AppService.Models
                     continue;
                 }
             }
-            return new CertificatePatch(id, name, type, systemData, kind.Value, password.Value, friendlyName.Value, subjectName.Value, Optional.ToList(hostNames), pfxBlob.Value, siteName.Value, selfLink.Value, issuer.Value, Optional.ToNullable(issueDate), Optional.ToNullable(expirationDate), thumbprint.Value, Optional.ToNullable(valid), cerBlob.Value, publicKeyHash.Value, hostingEnvironmentProfile.Value, keyVaultId.Value, keyVaultSecretName.Value, Optional.ToNullable(keyVaultSecretStatus), serverFarmId.Value, canonicalName.Value, domainValidationMethod.Value);
+            return new CertificatePatch(id, name, type, systemData.Value, password.Value, friendlyName.Value, subjectName.Value, Optional.ToList(hostNames), pfxBlob.Value, siteName.Value, selfLink.Value, issuer.Value, Optional.ToNullable(issueDate), Optional.ToNullable(expirationDate), thumbprint.Value, Optional.ToNullable(valid), cerBlob.Value, publicKeyHash.Value, hostingEnvironmentProfile.Value, keyVaultId.Value, keyVaultSecretName.Value, Optional.ToNullable(keyVaultSecretStatus), serverFarmId.Value, canonicalName.Value, domainValidationMethod.Value, kind.Value);
         }
     }
 }

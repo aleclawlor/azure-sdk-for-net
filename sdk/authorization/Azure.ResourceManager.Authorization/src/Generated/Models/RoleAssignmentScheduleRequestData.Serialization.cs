@@ -84,9 +84,9 @@ namespace Azure.ResourceManager.Authorization
             ResourceIdentifier id = default;
             string name = default;
             ResourceType type = default;
-            SystemData systemData = default;
+            Optional<SystemData> systemData = default;
             Optional<string> scope = default;
-            Optional<string> roleDefinitionId = default;
+            Optional<ResourceIdentifier> roleDefinitionId = default;
             Optional<string> principalId = default;
             Optional<PrincipalType> principalType = default;
             Optional<RequestType> requestType = default;
@@ -122,6 +122,11 @@ namespace Azure.ResourceManager.Authorization
                 }
                 if (property.NameEquals("systemData"))
                 {
+                    if (property.Value.ValueKind == JsonValueKind.Null)
+                    {
+                        property.ThrowNonNullablePropertyIsNull();
+                        continue;
+                    }
                     systemData = JsonSerializer.Deserialize<SystemData>(property.Value.ToString());
                     continue;
                 }
@@ -141,7 +146,12 @@ namespace Azure.ResourceManager.Authorization
                         }
                         if (property0.NameEquals("roleDefinitionId"))
                         {
-                            roleDefinitionId = property0.Value.GetString();
+                            if (property0.Value.ValueKind == JsonValueKind.Null)
+                            {
+                                property0.ThrowNonNullablePropertyIsNull();
+                                continue;
+                            }
+                            roleDefinitionId = new ResourceIdentifier(property0.Value.GetString());
                             continue;
                         }
                         if (property0.NameEquals("principalId"))
@@ -263,7 +273,7 @@ namespace Azure.ResourceManager.Authorization
                     continue;
                 }
             }
-            return new RoleAssignmentScheduleRequestData(id, name, type, systemData, scope.Value, roleDefinitionId.Value, principalId.Value, Optional.ToNullable(principalType), Optional.ToNullable(requestType), Optional.ToNullable(status), approvalId.Value, targetRoleAssignmentScheduleId.Value, targetRoleAssignmentScheduleInstanceId.Value, scheduleInfo.Value, linkedRoleEligibilityScheduleId.Value, justification.Value, ticketInfo.Value, condition.Value, conditionVersion.Value, Optional.ToNullable(createdOn), requestorId.Value, expandedProperties.Value);
+            return new RoleAssignmentScheduleRequestData(id, name, type, systemData.Value, scope.Value, roleDefinitionId.Value, principalId.Value, Optional.ToNullable(principalType), Optional.ToNullable(requestType), Optional.ToNullable(status), approvalId.Value, targetRoleAssignmentScheduleId.Value, targetRoleAssignmentScheduleInstanceId.Value, scheduleInfo.Value, linkedRoleEligibilityScheduleId.Value, justification.Value, ticketInfo.Value, condition.Value, conditionVersion.Value, Optional.ToNullable(createdOn), requestorId.Value, expandedProperties.Value);
         }
     }
 }

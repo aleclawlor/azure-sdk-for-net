@@ -22,6 +22,8 @@ namespace Azure.AI.Language.Conversations.Authoring
     {
         private const string AuthorizationHeader = "Ocp-Apim-Subscription-Key";
         private readonly AzureKeyCredential _keyCredential;
+        private const string AuthorizationHeader0 = "Ocp-Apim-Subscription-Key";
+        private readonly AzureKeyCredential _keyCredential0;
         private readonly HttpPipeline _pipeline;
         private readonly Uri _endpoint;
         private readonly string _apiVersion;
@@ -39,54 +41,100 @@ namespace Azure.AI.Language.Conversations.Authoring
 
         /// <summary> Creates a new project or updates an existing one. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
-        /// <param name="content"> The content to send as the body of the request. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="content"> The content to send as the body of the request. Details of the request body schema are in the Remarks section below. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="content"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The response returned from the service. Details of the response body schema are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call CreateProjectAsync with required parameters and request content, and how to parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var data = new {
+        ///     projectKind = "Conversation",
+        ///     projectName = "<projectName>",
+        ///     language = "<language>",
+        /// };
+        /// 
+        /// Response response = await client.CreateProjectAsync("<projectName>", RequestContent.Create(data));
+        /// 
+        /// JsonElement result = JsonDocument.Parse(response.ContentStream).RootElement;
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastModifiedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("projectKind").ToString());
+        /// Console.WriteLine(result.GetProperty("projectName").ToString());
+        /// Console.WriteLine(result.GetProperty("language").ToString());
+        /// ]]></code>
+        /// This sample shows how to call CreateProjectAsync with all parameters and request content, and how to parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var data = new {
+        ///     projectKind = "Conversation",
+        ///     settings = new {
+        ///         confidenceThreshold = 123.45f,
+        ///     },
+        ///     projectName = "<projectName>",
+        ///     multilingual = true,
+        ///     description = "<description>",
+        ///     language = "<language>",
+        /// };
+        /// 
+        /// Response response = await client.CreateProjectAsync("<projectName>", RequestContent.Create(data));
+        /// 
+        /// JsonElement result = JsonDocument.Parse(response.ContentStream).RootElement;
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastModifiedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastTrainedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastDeployedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("projectKind").ToString());
+        /// Console.WriteLine(result.GetProperty("settings").GetProperty("confidenceThreshold").ToString());
+        /// Console.WriteLine(result.GetProperty("projectName").ToString());
+        /// Console.WriteLine(result.GetProperty("multilingual").ToString());
+        /// Console.WriteLine(result.GetProperty("description").ToString());
+        /// Console.WriteLine(result.GetProperty("language").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Request Body</c>:
+        /// Below is the JSON schema for the request and response payloads.
+        /// 
+        /// Request Body:
+        /// 
+        /// Schema for <c>CreateProjectOptions</c>:
         /// <code>{
-        ///   projectKind: &quot;Conversation&quot; | &quot;Orchestration&quot; (required),
+        ///   projectKind: &quot;Conversation&quot; | &quot;Orchestration&quot;, # Required. Represents the project kind.
         ///   settings: {
-        ///     confidenceThreshold: number (required)
-        ///   },
-        ///   projectName: string (required),
-        ///   multilingual: boolean,
-        ///   description: string,
-        ///   language: string (required)
+        ///     confidenceThreshold: number, # Required. The threshold of the intent with the highest confidence, at which the prediction will automatically be changed to &quot;None&quot;.
+        ///   }, # Optional. The project settings.
+        ///   projectName: string, # Required. The new project name.
+        ///   multilingual: boolean, # Optional. Whether the project would be used for multiple languages or not.
+        ///   description: string, # Optional. The project description.
+        ///   language: string, # Required. The project language. This is BCP-47 representation of a language. For example, use &quot;en&quot; for English, &quot;en-gb&quot; for English (UK), &quot;es&quot; for Spanish etc.
         /// }
         /// </code>
-        /// Schema for <c>Response Body</c>:
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ProjectMetadata</c>:
         /// <code>{
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastModifiedDateTime: string (ISO 8601 Format),
-        ///   lastTrainedDateTime: string (ISO 8601 Format),
-        ///   lastDeployedDateTime: string (ISO 8601 Format),
-        ///   projectKind: &quot;Conversation&quot; | &quot;Orchestration&quot;,
+        ///   createdDateTime: string (ISO 8601 Format), # Required. Represents the project creation datetime.
+        ///   lastModifiedDateTime: string (ISO 8601 Format), # Required. Represents the project creation datetime.
+        ///   lastTrainedDateTime: string (ISO 8601 Format), # Optional. Represents the project last trained datetime.
+        ///   lastDeployedDateTime: string (ISO 8601 Format), # Optional. Represents the project last deployed datetime.
+        ///   projectKind: &quot;Conversation&quot; | &quot;Orchestration&quot;, # Required. Represents the project kind.
         ///   settings: {
-        ///     confidenceThreshold: number
-        ///   },
-        ///   projectName: string,
-        ///   multilingual: boolean,
-        ///   description: string,
-        ///   language: string
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///     confidenceThreshold: number, # Required. The threshold of the intent with the highest confidence, at which the prediction will automatically be changed to &quot;None&quot;.
+        ///   }, # Optional. The project settings.
+        ///   projectName: string, # Required. The new project name.
+        ///   multilingual: boolean, # Optional. Whether the project would be used for multiple languages or not.
+        ///   description: string, # Optional. The project description.
+        ///   language: string, # Required. The project language. This is BCP-47 representation of a language. For example, use &quot;en&quot; for English, &quot;en-gb&quot; for English (UK), &quot;es&quot; for Spanish etc.
         /// }
         /// </code>
         /// 
@@ -112,54 +160,100 @@ namespace Azure.AI.Language.Conversations.Authoring
 
         /// <summary> Creates a new project or updates an existing one. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
-        /// <param name="content"> The content to send as the body of the request. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="content"> The content to send as the body of the request. Details of the request body schema are in the Remarks section below. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="content"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The response returned from the service. Details of the response body schema are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call CreateProject with required parameters and request content, and how to parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var data = new {
+        ///     projectKind = "Conversation",
+        ///     projectName = "<projectName>",
+        ///     language = "<language>",
+        /// };
+        /// 
+        /// Response response = client.CreateProject("<projectName>", RequestContent.Create(data));
+        /// 
+        /// JsonElement result = JsonDocument.Parse(response.ContentStream).RootElement;
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastModifiedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("projectKind").ToString());
+        /// Console.WriteLine(result.GetProperty("projectName").ToString());
+        /// Console.WriteLine(result.GetProperty("language").ToString());
+        /// ]]></code>
+        /// This sample shows how to call CreateProject with all parameters and request content, and how to parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var data = new {
+        ///     projectKind = "Conversation",
+        ///     settings = new {
+        ///         confidenceThreshold = 123.45f,
+        ///     },
+        ///     projectName = "<projectName>",
+        ///     multilingual = true,
+        ///     description = "<description>",
+        ///     language = "<language>",
+        /// };
+        /// 
+        /// Response response = client.CreateProject("<projectName>", RequestContent.Create(data));
+        /// 
+        /// JsonElement result = JsonDocument.Parse(response.ContentStream).RootElement;
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastModifiedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastTrainedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastDeployedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("projectKind").ToString());
+        /// Console.WriteLine(result.GetProperty("settings").GetProperty("confidenceThreshold").ToString());
+        /// Console.WriteLine(result.GetProperty("projectName").ToString());
+        /// Console.WriteLine(result.GetProperty("multilingual").ToString());
+        /// Console.WriteLine(result.GetProperty("description").ToString());
+        /// Console.WriteLine(result.GetProperty("language").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Request Body</c>:
+        /// Below is the JSON schema for the request and response payloads.
+        /// 
+        /// Request Body:
+        /// 
+        /// Schema for <c>CreateProjectOptions</c>:
         /// <code>{
-        ///   projectKind: &quot;Conversation&quot; | &quot;Orchestration&quot; (required),
+        ///   projectKind: &quot;Conversation&quot; | &quot;Orchestration&quot;, # Required. Represents the project kind.
         ///   settings: {
-        ///     confidenceThreshold: number (required)
-        ///   },
-        ///   projectName: string (required),
-        ///   multilingual: boolean,
-        ///   description: string,
-        ///   language: string (required)
+        ///     confidenceThreshold: number, # Required. The threshold of the intent with the highest confidence, at which the prediction will automatically be changed to &quot;None&quot;.
+        ///   }, # Optional. The project settings.
+        ///   projectName: string, # Required. The new project name.
+        ///   multilingual: boolean, # Optional. Whether the project would be used for multiple languages or not.
+        ///   description: string, # Optional. The project description.
+        ///   language: string, # Required. The project language. This is BCP-47 representation of a language. For example, use &quot;en&quot; for English, &quot;en-gb&quot; for English (UK), &quot;es&quot; for Spanish etc.
         /// }
         /// </code>
-        /// Schema for <c>Response Body</c>:
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ProjectMetadata</c>:
         /// <code>{
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastModifiedDateTime: string (ISO 8601 Format),
-        ///   lastTrainedDateTime: string (ISO 8601 Format),
-        ///   lastDeployedDateTime: string (ISO 8601 Format),
-        ///   projectKind: &quot;Conversation&quot; | &quot;Orchestration&quot;,
+        ///   createdDateTime: string (ISO 8601 Format), # Required. Represents the project creation datetime.
+        ///   lastModifiedDateTime: string (ISO 8601 Format), # Required. Represents the project creation datetime.
+        ///   lastTrainedDateTime: string (ISO 8601 Format), # Optional. Represents the project last trained datetime.
+        ///   lastDeployedDateTime: string (ISO 8601 Format), # Optional. Represents the project last deployed datetime.
+        ///   projectKind: &quot;Conversation&quot; | &quot;Orchestration&quot;, # Required. Represents the project kind.
         ///   settings: {
-        ///     confidenceThreshold: number
-        ///   },
-        ///   projectName: string,
-        ///   multilingual: boolean,
-        ///   description: string,
-        ///   language: string
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///     confidenceThreshold: number, # Required. The threshold of the intent with the highest confidence, at which the prediction will automatically be changed to &quot;None&quot;.
+        ///   }, # Optional. The project settings.
+        ///   projectName: string, # Required. The new project name.
+        ///   multilingual: boolean, # Optional. Whether the project would be used for multiple languages or not.
+        ///   description: string, # Optional. The project description.
+        ///   language: string, # Required. The project language. This is BCP-47 representation of a language. For example, use &quot;en&quot; for English, &quot;en-gb&quot; for English (UK), &quot;es&quot; for Spanish etc.
         /// }
         /// </code>
         /// 
@@ -185,41 +279,52 @@ namespace Azure.AI.Language.Conversations.Authoring
 
         /// <summary> Gets the details of a project. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The response returned from the service. Details of the response body schema are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetProjectAsync with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// Response response = await client.GetProjectAsync("<projectName>");
+        /// 
+        /// JsonElement result = JsonDocument.Parse(response.ContentStream).RootElement;
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastModifiedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastTrainedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastDeployedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("projectKind").ToString());
+        /// Console.WriteLine(result.GetProperty("settings").GetProperty("confidenceThreshold").ToString());
+        /// Console.WriteLine(result.GetProperty("projectName").ToString());
+        /// Console.WriteLine(result.GetProperty("multilingual").ToString());
+        /// Console.WriteLine(result.GetProperty("description").ToString());
+        /// Console.WriteLine(result.GetProperty("language").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ProjectMetadata</c>:
         /// <code>{
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastModifiedDateTime: string (ISO 8601 Format),
-        ///   lastTrainedDateTime: string (ISO 8601 Format),
-        ///   lastDeployedDateTime: string (ISO 8601 Format),
-        ///   projectKind: &quot;Conversation&quot; | &quot;Orchestration&quot;,
+        ///   createdDateTime: string (ISO 8601 Format), # Required. Represents the project creation datetime.
+        ///   lastModifiedDateTime: string (ISO 8601 Format), # Required. Represents the project creation datetime.
+        ///   lastTrainedDateTime: string (ISO 8601 Format), # Optional. Represents the project last trained datetime.
+        ///   lastDeployedDateTime: string (ISO 8601 Format), # Optional. Represents the project last deployed datetime.
+        ///   projectKind: &quot;Conversation&quot; | &quot;Orchestration&quot;, # Required. Represents the project kind.
         ///   settings: {
-        ///     confidenceThreshold: number
-        ///   },
-        ///   projectName: string,
-        ///   multilingual: boolean,
-        ///   description: string,
-        ///   language: string
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///     confidenceThreshold: number, # Required. The threshold of the intent with the highest confidence, at which the prediction will automatically be changed to &quot;None&quot;.
+        ///   }, # Optional. The project settings.
+        ///   projectName: string, # Required. The new project name.
+        ///   multilingual: boolean, # Optional. Whether the project would be used for multiple languages or not.
+        ///   description: string, # Optional. The project description.
+        ///   language: string, # Required. The project language. This is BCP-47 representation of a language. For example, use &quot;en&quot; for English, &quot;en-gb&quot; for English (UK), &quot;es&quot; for Spanish etc.
         /// }
         /// </code>
         /// 
@@ -244,41 +349,52 @@ namespace Azure.AI.Language.Conversations.Authoring
 
         /// <summary> Gets the details of a project. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The response returned from the service. Details of the response body schema are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetProject with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// Response response = client.GetProject("<projectName>");
+        /// 
+        /// JsonElement result = JsonDocument.Parse(response.ContentStream).RootElement;
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastModifiedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastTrainedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastDeployedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("projectKind").ToString());
+        /// Console.WriteLine(result.GetProperty("settings").GetProperty("confidenceThreshold").ToString());
+        /// Console.WriteLine(result.GetProperty("projectName").ToString());
+        /// Console.WriteLine(result.GetProperty("multilingual").ToString());
+        /// Console.WriteLine(result.GetProperty("description").ToString());
+        /// Console.WriteLine(result.GetProperty("language").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ProjectMetadata</c>:
         /// <code>{
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastModifiedDateTime: string (ISO 8601 Format),
-        ///   lastTrainedDateTime: string (ISO 8601 Format),
-        ///   lastDeployedDateTime: string (ISO 8601 Format),
-        ///   projectKind: &quot;Conversation&quot; | &quot;Orchestration&quot;,
+        ///   createdDateTime: string (ISO 8601 Format), # Required. Represents the project creation datetime.
+        ///   lastModifiedDateTime: string (ISO 8601 Format), # Required. Represents the project creation datetime.
+        ///   lastTrainedDateTime: string (ISO 8601 Format), # Optional. Represents the project last trained datetime.
+        ///   lastDeployedDateTime: string (ISO 8601 Format), # Optional. Represents the project last deployed datetime.
+        ///   projectKind: &quot;Conversation&quot; | &quot;Orchestration&quot;, # Required. Represents the project kind.
         ///   settings: {
-        ///     confidenceThreshold: number
-        ///   },
-        ///   projectName: string,
-        ///   multilingual: boolean,
-        ///   description: string,
-        ///   language: string
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///     confidenceThreshold: number, # Required. The threshold of the intent with the highest confidence, at which the prediction will automatically be changed to &quot;None&quot;.
+        ///   }, # Optional. The project settings.
+        ///   projectName: string, # Required. The new project name.
+        ///   multilingual: boolean, # Optional. Whether the project would be used for multiple languages or not.
+        ///   description: string, # Optional. The project description.
+        ///   language: string, # Required. The project language. This is BCP-47 representation of a language. For example, use &quot;en&quot; for English, &quot;en-gb&quot; for English (UK), &quot;es&quot; for Spanish etc.
         /// }
         /// </code>
         /// 
@@ -304,35 +420,42 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Gets the details of a deployment. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="deploymentName"> The name of the specific deployment of the project to use. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="deploymentName"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> or <paramref name="deploymentName"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The response returned from the service. Details of the response body schema are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetDeploymentAsync with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// Response response = await client.GetDeploymentAsync("<projectName>", "<deploymentName>");
+        /// 
+        /// JsonElement result = JsonDocument.Parse(response.ContentStream).RootElement;
+        /// Console.WriteLine(result.GetProperty("deploymentName").ToString());
+        /// Console.WriteLine(result.GetProperty("modelId").ToString());
+        /// Console.WriteLine(result.GetProperty("lastTrainedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastDeployedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("deploymentExpirationDate").ToString());
+        /// Console.WriteLine(result.GetProperty("modelTrainingConfigVersion").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ProjectDeployment</c>:
         /// <code>{
-        ///   deploymentName: string,
-        ///   modelId: string,
-        ///   lastTrainedDateTime: string (ISO 8601 Format),
-        ///   lastDeployedDateTime: string (ISO 8601 Format),
-        ///   deploymentExpirationDate: ConversationalAnalysisAuthoringProjectDeploymentExpirationDate,
-        ///   modelTrainingConfigVersion: string
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   deploymentName: string, # Required. Represents deployment name.
+        ///   modelId: string, # Required. Represents deployment modelId.
+        ///   lastTrainedDateTime: string (ISO 8601 Format), # Required. Represents deployment last trained time.
+        ///   lastDeployedDateTime: string (ISO 8601 Format), # Required. Represents deployment last deployed time.
+        ///   deploymentExpirationDate: string (date), # Required. Represents deployment expiration date in the runtime.
+        ///   modelTrainingConfigVersion: string, # Required. Represents model training config version.
         /// }
         /// </code>
         /// 
@@ -359,35 +482,42 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Gets the details of a deployment. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="deploymentName"> The name of the specific deployment of the project to use. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="deploymentName"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> or <paramref name="deploymentName"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The response returned from the service. Details of the response body schema are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetDeployment with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// Response response = client.GetDeployment("<projectName>", "<deploymentName>");
+        /// 
+        /// JsonElement result = JsonDocument.Parse(response.ContentStream).RootElement;
+        /// Console.WriteLine(result.GetProperty("deploymentName").ToString());
+        /// Console.WriteLine(result.GetProperty("modelId").ToString());
+        /// Console.WriteLine(result.GetProperty("lastTrainedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastDeployedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("deploymentExpirationDate").ToString());
+        /// Console.WriteLine(result.GetProperty("modelTrainingConfigVersion").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ProjectDeployment</c>:
         /// <code>{
-        ///   deploymentName: string,
-        ///   modelId: string,
-        ///   lastTrainedDateTime: string (ISO 8601 Format),
-        ///   lastDeployedDateTime: string (ISO 8601 Format),
-        ///   deploymentExpirationDate: ConversationalAnalysisAuthoringProjectDeploymentExpirationDate,
-        ///   modelTrainingConfigVersion: string
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   deploymentName: string, # Required. Represents deployment name.
+        ///   modelId: string, # Required. Represents deployment modelId.
+        ///   lastTrainedDateTime: string (ISO 8601 Format), # Required. Represents deployment last trained time.
+        ///   lastDeployedDateTime: string (ISO 8601 Format), # Required. Represents deployment last deployed time.
+        ///   deploymentExpirationDate: string (date), # Required. Represents deployment expiration date in the runtime.
+        ///   modelTrainingConfigVersion: string, # Required. Represents model training config version.
         /// }
         /// </code>
         /// 
@@ -415,55 +545,77 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="deploymentName"> The name of the specific deployment of the project to use. </param>
         /// <param name="jobId"> The job ID. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/>, <paramref name="deploymentName"/> or <paramref name="jobId"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/>, <paramref name="deploymentName"/> or <paramref name="jobId"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The response returned from the service. Details of the response body schema are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetDeploymentJobStatusAsync with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// Response response = await client.GetDeploymentJobStatusAsync("<projectName>", "<deploymentName>", "<jobId>");
+        /// 
+        /// JsonElement result = JsonDocument.Parse(response.ContentStream).RootElement;
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>DeploymentJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ]
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -492,55 +644,77 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="deploymentName"> The name of the specific deployment of the project to use. </param>
         /// <param name="jobId"> The job ID. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/>, <paramref name="deploymentName"/> or <paramref name="jobId"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/>, <paramref name="deploymentName"/> or <paramref name="jobId"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The response returned from the service. Details of the response body schema are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetDeploymentJobStatus with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// Response response = client.GetDeploymentJobStatus("<projectName>", "<deploymentName>", "<jobId>");
+        /// 
+        /// JsonElement result = JsonDocument.Parse(response.ContentStream).RootElement;
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>DeploymentJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ]
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -568,55 +742,77 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Gets the status of an existing swap deployment job. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="jobId"> The job ID. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="jobId"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> or <paramref name="jobId"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The response returned from the service. Details of the response body schema are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetSwapDeploymentsJobStatusAsync with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// Response response = await client.GetSwapDeploymentsJobStatusAsync("<projectName>", "<jobId>");
+        /// 
+        /// JsonElement result = JsonDocument.Parse(response.ContentStream).RootElement;
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>DeploymentJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ]
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -643,55 +839,77 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Gets the status of an existing swap deployment job. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="jobId"> The job ID. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="jobId"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> or <paramref name="jobId"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The response returned from the service. Details of the response body schema are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetSwapDeploymentsJobStatus with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// Response response = client.GetSwapDeploymentsJobStatus("<projectName>", "<jobId>");
+        /// 
+        /// JsonElement result = JsonDocument.Parse(response.ContentStream).RootElement;
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>DeploymentJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ]
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -718,56 +936,79 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Gets the status of an export job. Once job completes, returns the project metadata, and assets. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="jobId"> The job ID. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="jobId"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> or <paramref name="jobId"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The response returned from the service. Details of the response body schema are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetExportProjectJobStatusAsync with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// Response response = await client.GetExportProjectJobStatusAsync("<projectName>", "<jobId>");
+        /// 
+        /// JsonElement result = JsonDocument.Parse(response.ContentStream).RootElement;
+        /// Console.WriteLine(result.GetProperty("resultUrl").ToString());
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ExportProjectJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   resultUrl: string, # Optional. The URL to use in order to download the exported project.
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ],
-        ///   resultUrl: string
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -794,56 +1035,79 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Gets the status of an export job. Once job completes, returns the project metadata, and assets. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="jobId"> The job ID. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="jobId"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> or <paramref name="jobId"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The response returned from the service. Details of the response body schema are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetExportProjectJobStatus with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// Response response = client.GetExportProjectJobStatus("<projectName>", "<jobId>");
+        /// 
+        /// JsonElement result = JsonDocument.Parse(response.ContentStream).RootElement;
+        /// Console.WriteLine(result.GetProperty("resultUrl").ToString());
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ExportProjectJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   resultUrl: string, # Optional. The URL to use in order to download the exported project.
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ],
-        ///   resultUrl: string
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -870,55 +1134,77 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Gets the status for an import. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="jobId"> The job ID. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="jobId"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> or <paramref name="jobId"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The response returned from the service. Details of the response body schema are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetImportProjectJobStatusAsync with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// Response response = await client.GetImportProjectJobStatusAsync("<projectName>", "<jobId>");
+        /// 
+        /// JsonElement result = JsonDocument.Parse(response.ContentStream).RootElement;
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ImportProjectJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ]
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -945,55 +1231,77 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Gets the status for an import. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="jobId"> The job ID. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="jobId"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> or <paramref name="jobId"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The response returned from the service. Details of the response body schema are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetImportProjectJobStatus with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// Response response = client.GetImportProjectJobStatus("<projectName>", "<jobId>");
+        /// 
+        /// JsonElement result = JsonDocument.Parse(response.ContentStream).RootElement;
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ImportProjectJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ]
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -1020,35 +1328,42 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Gets the details of a trained model. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="trainedModelLabel"> The trained model label. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="trainedModelLabel"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> or <paramref name="trainedModelLabel"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The response returned from the service. Details of the response body schema are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetTrainedModelAsync with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// Response response = await client.GetTrainedModelAsync("<projectName>", "<trainedModelLabel>");
+        /// 
+        /// JsonElement result = JsonDocument.Parse(response.ContentStream).RootElement;
+        /// Console.WriteLine(result.GetProperty("label").ToString());
+        /// Console.WriteLine(result.GetProperty("modelId").ToString());
+        /// Console.WriteLine(result.GetProperty("lastTrainedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastTrainingDurationInSeconds").ToString());
+        /// Console.WriteLine(result.GetProperty("modelExpirationDate").ToString());
+        /// Console.WriteLine(result.GetProperty("modelTrainingConfigVersion").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ProjectTrainedModel</c>:
         /// <code>{
-        ///   label: string,
-        ///   modelId: string,
-        ///   lastTrainedDateTime: string (ISO 8601 Format),
-        ///   lastTrainingDurationInSeconds: number,
-        ///   modelExpirationDate: ConversationalAnalysisAuthoringProjectTrainedModelExpirationDate,
-        ///   modelTrainingConfigVersion: string
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   label: string, # Required. The trained model label.
+        ///   modelId: string, # Required. The model ID.
+        ///   lastTrainedDateTime: string (ISO 8601 Format), # Required. The last trained date time of the model.
+        ///   lastTrainingDurationInSeconds: number, # Required. The duration of the model&apos;s last training request in seconds.
+        ///   modelExpirationDate: string (date), # Required. The model expiration date.
+        ///   modelTrainingConfigVersion: string, # Required. The model training config version.
         /// }
         /// </code>
         /// 
@@ -1075,35 +1390,42 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Gets the details of a trained model. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="trainedModelLabel"> The trained model label. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="trainedModelLabel"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> or <paramref name="trainedModelLabel"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The response returned from the service. Details of the response body schema are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetTrainedModel with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// Response response = client.GetTrainedModel("<projectName>", "<trainedModelLabel>");
+        /// 
+        /// JsonElement result = JsonDocument.Parse(response.ContentStream).RootElement;
+        /// Console.WriteLine(result.GetProperty("label").ToString());
+        /// Console.WriteLine(result.GetProperty("modelId").ToString());
+        /// Console.WriteLine(result.GetProperty("lastTrainedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastTrainingDurationInSeconds").ToString());
+        /// Console.WriteLine(result.GetProperty("modelExpirationDate").ToString());
+        /// Console.WriteLine(result.GetProperty("modelTrainingConfigVersion").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ProjectTrainedModel</c>:
         /// <code>{
-        ///   label: string,
-        ///   modelId: string,
-        ///   lastTrainedDateTime: string (ISO 8601 Format),
-        ///   lastTrainingDurationInSeconds: number,
-        ///   modelExpirationDate: ConversationalAnalysisAuthoringProjectTrainedModelExpirationDate,
-        ///   modelTrainingConfigVersion: string
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   label: string, # Required. The trained model label.
+        ///   modelId: string, # Required. The model ID.
+        ///   lastTrainedDateTime: string (ISO 8601 Format), # Required. The last trained date time of the model.
+        ///   lastTrainingDurationInSeconds: number, # Required. The duration of the model&apos;s last training request in seconds.
+        ///   modelExpirationDate: string (date), # Required. The model expiration date.
+        ///   modelTrainingConfigVersion: string, # Required. The model training config version.
         /// }
         /// </code>
         /// 
@@ -1130,29 +1452,22 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Deletes an existing trained model. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="trainedModelLabel"> The trained model label. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="trainedModelLabel"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> or <paramref name="trainedModelLabel"/> is an empty string, and was expected to be non-empty. </exception>
-        /// <remarks>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
-        /// }
-        /// </code>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The response returned from the service. </returns>
+        /// <example>
+        /// This sample shows how to call DeleteTrainedModelAsync with required parameters.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
         /// 
-        /// </remarks>
+        /// Response response = await client.DeleteTrainedModelAsync("<projectName>", "<trainedModelLabel>");
+        /// Console.WriteLine(response.Status);
+        /// ]]></code>
+        /// </example>
         public virtual async Task<Response> DeleteTrainedModelAsync(string projectName, string trainedModelLabel, RequestContext context = null)
         {
             Argument.AssertNotNullOrEmpty(projectName, nameof(projectName));
@@ -1175,29 +1490,22 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Deletes an existing trained model. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="trainedModelLabel"> The trained model label. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="trainedModelLabel"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> or <paramref name="trainedModelLabel"/> is an empty string, and was expected to be non-empty. </exception>
-        /// <remarks>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
-        /// }
-        /// </code>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The response returned from the service. </returns>
+        /// <example>
+        /// This sample shows how to call DeleteTrainedModel with required parameters.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
         /// 
-        /// </remarks>
+        /// Response response = client.DeleteTrainedModel("<projectName>", "<trainedModelLabel>");
+        /// Console.WriteLine(response.Status);
+        /// ]]></code>
+        /// </example>
         public virtual Response DeleteTrainedModel(string projectName, string trainedModelLabel, RequestContext context = null)
         {
             Argument.AssertNotNullOrEmpty(projectName, nameof(projectName));
@@ -1220,54 +1528,88 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Gets the evaluation summary of a trained model. The summary includes high level performance measurements of the model e.g., F1, Precision, Recall, etc. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="trainedModelLabel"> The trained model label. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="trainedModelLabel"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> or <paramref name="trainedModelLabel"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The response returned from the service. Details of the response body schema are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetModelEvaluationSummaryAsync with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// Response response = await client.GetModelEvaluationSummaryAsync("<projectName>", "<trainedModelLabel>");
+        /// 
+        /// JsonElement result = JsonDocument.Parse(response.ContentStream).RootElement;
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("confusionMatrix").GetProperty("<test>").GetProperty("<test>").GetProperty("normalizedValue").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("confusionMatrix").GetProperty("<test>").GetProperty("<test>").GetProperty("rawValue").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("entities").GetProperty("<test>").GetProperty("f1").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("entities").GetProperty("<test>").GetProperty("precision").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("entities").GetProperty("<test>").GetProperty("recall").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("entities").GetProperty("<test>").GetProperty("truePositiveCount").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("entities").GetProperty("<test>").GetProperty("trueNegativeCount").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("entities").GetProperty("<test>").GetProperty("falsePositiveCount").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("entities").GetProperty("<test>").GetProperty("falseNegativeCount").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("microF1").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("microPrecision").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("microRecall").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("macroF1").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("macroPrecision").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("macroRecall").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("confusionMatrix").GetProperty("<test>").GetProperty("<test>").GetProperty("normalizedValue").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("confusionMatrix").GetProperty("<test>").GetProperty("<test>").GetProperty("rawValue").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("intents").GetProperty("<test>").GetProperty("f1").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("intents").GetProperty("<test>").GetProperty("precision").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("intents").GetProperty("<test>").GetProperty("recall").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("intents").GetProperty("<test>").GetProperty("truePositiveCount").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("intents").GetProperty("<test>").GetProperty("trueNegativeCount").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("intents").GetProperty("<test>").GetProperty("falsePositiveCount").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("intents").GetProperty("<test>").GetProperty("falseNegativeCount").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("microF1").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("microPrecision").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("microRecall").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("macroF1").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("macroPrecision").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("macroRecall").ToString());
+        /// Console.WriteLine(result.GetProperty("evaluationOptions").GetProperty("kind").ToString());
+        /// Console.WriteLine(result.GetProperty("evaluationOptions").GetProperty("trainingSplitPercentage").ToString());
+        /// Console.WriteLine(result.GetProperty("evaluationOptions").GetProperty("testingSplitPercentage").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>EvaluationSummary</c>:
         /// <code>{
         ///   entitiesEvaluation: {
-        ///     confusionMatrix: Dictionary&lt;string, Dictionary&lt;string, ConfusionMatrixCell&gt;&gt;,
-        ///     entities: Dictionary&lt;string, EntityEvaluationSummary&gt;,
-        ///     microF1: number,
-        ///     microPrecision: number,
-        ///     microRecall: number,
-        ///     macroF1: number,
-        ///     macroPrecision: number,
-        ///     macroRecall: number
-        ///   },
+        ///     confusionMatrix: Dictionary&lt;string, Dictionary&lt;string, ConfusionMatrixCell&gt;&gt;, # Required. Represents the confusion matrix between two entities (the two entities can be the same). The matrix is between the entity that was labelled and the entity that was predicted.
+        ///     entities: Dictionary&lt;string, EntityEvaluationSummary&gt;, # Required. Represents the entities evaluation summary.
+        ///     microF1: number, # Required. Represents the micro F1
+        ///     microPrecision: number, # Required. Represents the micro precision
+        ///     microRecall: number, # Required. Represents the micro recall
+        ///     macroF1: number, # Required. Represents the macro F1
+        ///     macroPrecision: number, # Required. Represents the macro precision
+        ///     macroRecall: number, # Required. Represents the macro recall
+        ///   }, # Required. Contains the data related to entities evaluation.
         ///   intentsEvaluation: {
-        ///     confusionMatrix: Dictionary&lt;string, Dictionary&lt;string, ConfusionMatrixCell&gt;&gt;,
-        ///     intents: Dictionary&lt;string, IntentEvaluationSummary&gt;,
-        ///     microF1: number,
-        ///     microPrecision: number,
-        ///     microRecall: number,
-        ///     macroF1: number,
-        ///     macroPrecision: number,
-        ///     macroRecall: number
-        ///   },
+        ///     confusionMatrix: Dictionary&lt;string, Dictionary&lt;string, ConfusionMatrixCell&gt;&gt;, # Required. Represents the confusion matrix between two intents (the two intents can be the same). The matrix is between the intent that was labelled and the intent that was predicted.
+        ///     intents: Dictionary&lt;string, IntentEvaluationSummary&gt;, # Required. Represents the intents evaluation summary.
+        ///     microF1: number, # Required. Represents the micro F1
+        ///     microPrecision: number, # Required. Represents the micro precision
+        ///     microRecall: number, # Required. Represents the micro recall
+        ///     macroF1: number, # Required. Represents the macro F1
+        ///     macroPrecision: number, # Required. Represents the macro precision
+        ///     macroRecall: number, # Required. Represents the macro recall
+        ///   }, # Required. Contains the data related to intents evaluation.
         ///   evaluationOptions: {
-        ///     kind: &quot;percentage&quot; | &quot;manual&quot;,
-        ///     trainingSplitPercentage: number,
-        ///     testingSplitPercentage: number
-        ///   }
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///     kind: &quot;percentage&quot; | &quot;manual&quot;, # Optional. Represents the evaluation kind. By default, the evaluation kind is set to percentage.
+        ///     trainingSplitPercentage: number, # Optional. Represents the training dataset split percentage. Only needed in case the evaluation kind is percentage.
+        ///     testingSplitPercentage: number, # Optional. Represents the testing dataset split percentage. Only needed in case the evaluation kind is percentage.
+        ///   }, # Optional. The options that were used while running the evaluation.
         /// }
         /// </code>
         /// 
@@ -1294,54 +1636,88 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Gets the evaluation summary of a trained model. The summary includes high level performance measurements of the model e.g., F1, Precision, Recall, etc. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="trainedModelLabel"> The trained model label. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="trainedModelLabel"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> or <paramref name="trainedModelLabel"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The response returned from the service. Details of the response body schema are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetModelEvaluationSummary with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// Response response = client.GetModelEvaluationSummary("<projectName>", "<trainedModelLabel>");
+        /// 
+        /// JsonElement result = JsonDocument.Parse(response.ContentStream).RootElement;
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("confusionMatrix").GetProperty("<test>").GetProperty("<test>").GetProperty("normalizedValue").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("confusionMatrix").GetProperty("<test>").GetProperty("<test>").GetProperty("rawValue").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("entities").GetProperty("<test>").GetProperty("f1").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("entities").GetProperty("<test>").GetProperty("precision").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("entities").GetProperty("<test>").GetProperty("recall").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("entities").GetProperty("<test>").GetProperty("truePositiveCount").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("entities").GetProperty("<test>").GetProperty("trueNegativeCount").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("entities").GetProperty("<test>").GetProperty("falsePositiveCount").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("entities").GetProperty("<test>").GetProperty("falseNegativeCount").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("microF1").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("microPrecision").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("microRecall").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("macroF1").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("macroPrecision").ToString());
+        /// Console.WriteLine(result.GetProperty("entitiesEvaluation").GetProperty("macroRecall").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("confusionMatrix").GetProperty("<test>").GetProperty("<test>").GetProperty("normalizedValue").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("confusionMatrix").GetProperty("<test>").GetProperty("<test>").GetProperty("rawValue").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("intents").GetProperty("<test>").GetProperty("f1").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("intents").GetProperty("<test>").GetProperty("precision").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("intents").GetProperty("<test>").GetProperty("recall").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("intents").GetProperty("<test>").GetProperty("truePositiveCount").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("intents").GetProperty("<test>").GetProperty("trueNegativeCount").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("intents").GetProperty("<test>").GetProperty("falsePositiveCount").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("intents").GetProperty("<test>").GetProperty("falseNegativeCount").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("microF1").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("microPrecision").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("microRecall").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("macroF1").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("macroPrecision").ToString());
+        /// Console.WriteLine(result.GetProperty("intentsEvaluation").GetProperty("macroRecall").ToString());
+        /// Console.WriteLine(result.GetProperty("evaluationOptions").GetProperty("kind").ToString());
+        /// Console.WriteLine(result.GetProperty("evaluationOptions").GetProperty("trainingSplitPercentage").ToString());
+        /// Console.WriteLine(result.GetProperty("evaluationOptions").GetProperty("testingSplitPercentage").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>EvaluationSummary</c>:
         /// <code>{
         ///   entitiesEvaluation: {
-        ///     confusionMatrix: Dictionary&lt;string, Dictionary&lt;string, ConfusionMatrixCell&gt;&gt;,
-        ///     entities: Dictionary&lt;string, EntityEvaluationSummary&gt;,
-        ///     microF1: number,
-        ///     microPrecision: number,
-        ///     microRecall: number,
-        ///     macroF1: number,
-        ///     macroPrecision: number,
-        ///     macroRecall: number
-        ///   },
+        ///     confusionMatrix: Dictionary&lt;string, Dictionary&lt;string, ConfusionMatrixCell&gt;&gt;, # Required. Represents the confusion matrix between two entities (the two entities can be the same). The matrix is between the entity that was labelled and the entity that was predicted.
+        ///     entities: Dictionary&lt;string, EntityEvaluationSummary&gt;, # Required. Represents the entities evaluation summary.
+        ///     microF1: number, # Required. Represents the micro F1
+        ///     microPrecision: number, # Required. Represents the micro precision
+        ///     microRecall: number, # Required. Represents the micro recall
+        ///     macroF1: number, # Required. Represents the macro F1
+        ///     macroPrecision: number, # Required. Represents the macro precision
+        ///     macroRecall: number, # Required. Represents the macro recall
+        ///   }, # Required. Contains the data related to entities evaluation.
         ///   intentsEvaluation: {
-        ///     confusionMatrix: Dictionary&lt;string, Dictionary&lt;string, ConfusionMatrixCell&gt;&gt;,
-        ///     intents: Dictionary&lt;string, IntentEvaluationSummary&gt;,
-        ///     microF1: number,
-        ///     microPrecision: number,
-        ///     microRecall: number,
-        ///     macroF1: number,
-        ///     macroPrecision: number,
-        ///     macroRecall: number
-        ///   },
+        ///     confusionMatrix: Dictionary&lt;string, Dictionary&lt;string, ConfusionMatrixCell&gt;&gt;, # Required. Represents the confusion matrix between two intents (the two intents can be the same). The matrix is between the intent that was labelled and the intent that was predicted.
+        ///     intents: Dictionary&lt;string, IntentEvaluationSummary&gt;, # Required. Represents the intents evaluation summary.
+        ///     microF1: number, # Required. Represents the micro F1
+        ///     microPrecision: number, # Required. Represents the micro precision
+        ///     microRecall: number, # Required. Represents the micro recall
+        ///     macroF1: number, # Required. Represents the macro F1
+        ///     macroPrecision: number, # Required. Represents the macro precision
+        ///     macroRecall: number, # Required. Represents the macro recall
+        ///   }, # Required. Contains the data related to intents evaluation.
         ///   evaluationOptions: {
-        ///     kind: &quot;percentage&quot; | &quot;manual&quot;,
-        ///     trainingSplitPercentage: number,
-        ///     testingSplitPercentage: number
-        ///   }
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///     kind: &quot;percentage&quot; | &quot;manual&quot;, # Optional. Represents the evaluation kind. By default, the evaluation kind is set to percentage.
+        ///     trainingSplitPercentage: number, # Optional. Represents the training dataset split percentage. Only needed in case the evaluation kind is percentage.
+        ///     testingSplitPercentage: number, # Optional. Represents the testing dataset split percentage. Only needed in case the evaluation kind is percentage.
+        ///   }, # Optional. The options that were used while running the evaluation.
         /// }
         /// </code>
         /// 
@@ -1368,68 +1744,102 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Gets the status for a training job. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="jobId"> The job ID. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="jobId"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> or <paramref name="jobId"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The response returned from the service. Details of the response body schema are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetTrainingJobStatusAsync with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// Response response = await client.GetTrainingJobStatusAsync("<projectName>", "<jobId>");
+        /// 
+        /// JsonElement result = JsonDocument.Parse(response.ContentStream).RootElement;
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("modelLabel").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingConfigVersion").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingMode").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("percentComplete").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("startDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("endDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("percentComplete").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("startDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("endDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("estimatedEndDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>TrainingJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   result: {
+        ///     modelLabel: string, # Required. Represents trained model label.
+        ///     trainingConfigVersion: string, # Required. Represents training config version.
+        ///     trainingMode: &quot;advanced&quot; | &quot;standard&quot;, # Optional. Represents the mode of the training operation.
+        ///     trainingStatus: {
+        ///       percentComplete: number, # Required. Represents progress percentage.
+        ///       startDateTime: string (ISO 8601 Format), # Optional. Represents the start date time.
+        ///       endDateTime: string (ISO 8601 Format), # Optional. Represents the end date time.
+        ///       status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. Represents the status of the sub-operation.
+        ///     }, # Required. Represents the model training status.
+        ///     evaluationStatus: SubTrainingJobState, # Optional. Represents model evaluation status.
+        ///     estimatedEndDateTime: string (ISO 8601 Format), # Optional. Represents the estimated end date time for training and evaluation.
+        ///   }, # Required. Represents training tasks detailed result.
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ],
-        ///   result: {
-        ///     modelLabel: string,
-        ///     trainingConfigVersion: string,
-        ///     trainingMode: &quot;advanced&quot; | &quot;standard&quot;,
-        ///     trainingStatus: {
-        ///       percentComplete: number,
-        ///       startDateTime: string (ISO 8601 Format),
-        ///       endDateTime: string (ISO 8601 Format),
-        ///       status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;
-        ///     },
-        ///     evaluationStatus: SubTrainingJobState,
-        ///     estimatedEndDateTime: string (ISO 8601 Format)
-        ///   }
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -1456,68 +1866,102 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Gets the status for a training job. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="jobId"> The job ID. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="jobId"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> or <paramref name="jobId"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The response returned from the service. Details of the response body schema are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetTrainingJobStatus with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// Response response = client.GetTrainingJobStatus("<projectName>", "<jobId>");
+        /// 
+        /// JsonElement result = JsonDocument.Parse(response.ContentStream).RootElement;
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("modelLabel").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingConfigVersion").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingMode").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("percentComplete").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("startDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("endDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("percentComplete").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("startDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("endDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("estimatedEndDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>TrainingJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   result: {
+        ///     modelLabel: string, # Required. Represents trained model label.
+        ///     trainingConfigVersion: string, # Required. Represents training config version.
+        ///     trainingMode: &quot;advanced&quot; | &quot;standard&quot;, # Optional. Represents the mode of the training operation.
+        ///     trainingStatus: {
+        ///       percentComplete: number, # Required. Represents progress percentage.
+        ///       startDateTime: string (ISO 8601 Format), # Optional. Represents the start date time.
+        ///       endDateTime: string (ISO 8601 Format), # Optional. Represents the end date time.
+        ///       status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. Represents the status of the sub-operation.
+        ///     }, # Required. Represents the model training status.
+        ///     evaluationStatus: SubTrainingJobState, # Optional. Represents model evaluation status.
+        ///     estimatedEndDateTime: string (ISO 8601 Format), # Optional. Represents the estimated end date time for training and evaluation.
+        ///   }, # Required. Represents training tasks detailed result.
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ],
-        ///   result: {
-        ///     modelLabel: string,
-        ///     trainingConfigVersion: string,
-        ///     trainingMode: &quot;advanced&quot; | &quot;standard&quot;,
-        ///     trainingStatus: {
-        ///       percentComplete: number,
-        ///       startDateTime: string (ISO 8601 Format),
-        ///       endDateTime: string (ISO 8601 Format),
-        ///       status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;
-        ///     },
-        ///     evaluationStatus: SubTrainingJobState,
-        ///     estimatedEndDateTime: string (ISO 8601 Format)
-        ///   }
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -1543,55 +1987,77 @@ namespace Azure.AI.Language.Conversations.Authoring
 
         /// <summary> Gets the status for a project deletion job. </summary>
         /// <param name="jobId"> The job ID. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="jobId"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="jobId"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The response returned from the service. Details of the response body schema are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetProjectDeletionJobStatusAsync with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// Response response = await client.GetProjectDeletionJobStatusAsync("<jobId>");
+        /// 
+        /// JsonElement result = JsonDocument.Parse(response.ContentStream).RootElement;
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ProjectDeletionJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ]
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -1616,55 +2082,77 @@ namespace Azure.AI.Language.Conversations.Authoring
 
         /// <summary> Gets the status for a project deletion job. </summary>
         /// <param name="jobId"> The job ID. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="jobId"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="jobId"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The response returned from the service. Details of the response body schema are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetProjectDeletionJobStatus with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// Response response = client.GetProjectDeletionJobStatus("<jobId>");
+        /// 
+        /// JsonElement result = JsonDocument.Parse(response.ContentStream).RootElement;
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ProjectDeletionJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ]
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -1688,44 +2176,51 @@ namespace Azure.AI.Language.Conversations.Authoring
         }
 
         /// <summary> Lists the existing projects. </summary>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
-        /// <remarks>
-        /// Schema for <c>Response Body</c>:
-        /// <code>{
-        ///   value: [
-        ///     {
-        ///       createdDateTime: string (ISO 8601 Format),
-        ///       lastModifiedDateTime: string (ISO 8601 Format),
-        ///       lastTrainedDateTime: string (ISO 8601 Format),
-        ///       lastDeployedDateTime: string (ISO 8601 Format),
-        ///       projectKind: &quot;Conversation&quot; | &quot;Orchestration&quot;,
-        ///       settings: {
-        ///         confidenceThreshold: number
-        ///       },
-        ///       projectName: string,
-        ///       multilingual: boolean,
-        ///       description: string,
-        ///       language: string
-        ///     }
-        ///   ],
-        ///   nextLink: string
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="AsyncPageable{T}"/> from the service containing a list of <see cref="BinaryData"/> objects. Details of the body schema for each item in the collection are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetProjectsAsync and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// await foreach (var data in client.GetProjectsAsync())
+        /// {
+        ///     JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        ///     Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("lastModifiedDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("lastTrainedDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("lastDeployedDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("projectKind").ToString());
+        ///     Console.WriteLine(result.GetProperty("settings").GetProperty("confidenceThreshold").ToString());
+        ///     Console.WriteLine(result.GetProperty("projectName").ToString());
+        ///     Console.WriteLine(result.GetProperty("multilingual").ToString());
+        ///     Console.WriteLine(result.GetProperty("description").ToString());
+        ///     Console.WriteLine(result.GetProperty("language").ToString());
         /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
+        /// ]]></code>
+        /// </example>
+        /// <remarks>
+        /// Below is the JSON schema for one item in the pageable response.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ConversationalAnalysisAuthoringProjectsMetadataValue</c>:
         /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   createdDateTime: string (ISO 8601 Format), # Required. Represents the project creation datetime.
+        ///   lastModifiedDateTime: string (ISO 8601 Format), # Required. Represents the project creation datetime.
+        ///   lastTrainedDateTime: string (ISO 8601 Format), # Optional. Represents the project last trained datetime.
+        ///   lastDeployedDateTime: string (ISO 8601 Format), # Optional. Represents the project last deployed datetime.
+        ///   projectKind: &quot;Conversation&quot; | &quot;Orchestration&quot;, # Required. Represents the project kind.
+        ///   settings: {
+        ///     confidenceThreshold: number, # Required. The threshold of the intent with the highest confidence, at which the prediction will automatically be changed to &quot;None&quot;.
+        ///   }, # Optional. The project settings.
+        ///   projectName: string, # Required. The new project name.
+        ///   multilingual: boolean, # Optional. Whether the project would be used for multiple languages or not.
+        ///   description: string, # Optional. The project description.
+        ///   language: string, # Required. The project language. This is BCP-47 representation of a language. For example, use &quot;en&quot; for English, &quot;en-gb&quot; for English (UK), &quot;es&quot; for Spanish etc.
         /// }
         /// </code>
         /// 
@@ -1753,44 +2248,51 @@ namespace Azure.AI.Language.Conversations.Authoring
         }
 
         /// <summary> Lists the existing projects. </summary>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
-        /// <remarks>
-        /// Schema for <c>Response Body</c>:
-        /// <code>{
-        ///   value: [
-        ///     {
-        ///       createdDateTime: string (ISO 8601 Format),
-        ///       lastModifiedDateTime: string (ISO 8601 Format),
-        ///       lastTrainedDateTime: string (ISO 8601 Format),
-        ///       lastDeployedDateTime: string (ISO 8601 Format),
-        ///       projectKind: &quot;Conversation&quot; | &quot;Orchestration&quot;,
-        ///       settings: {
-        ///         confidenceThreshold: number
-        ///       },
-        ///       projectName: string,
-        ///       multilingual: boolean,
-        ///       description: string,
-        ///       language: string
-        ///     }
-        ///   ],
-        ///   nextLink: string
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="Pageable{T}"/> from the service containing a list of <see cref="BinaryData"/> objects. Details of the body schema for each item in the collection are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetProjects and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// foreach (var data in client.GetProjects())
+        /// {
+        ///     JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        ///     Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("lastModifiedDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("lastTrainedDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("lastDeployedDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("projectKind").ToString());
+        ///     Console.WriteLine(result.GetProperty("settings").GetProperty("confidenceThreshold").ToString());
+        ///     Console.WriteLine(result.GetProperty("projectName").ToString());
+        ///     Console.WriteLine(result.GetProperty("multilingual").ToString());
+        ///     Console.WriteLine(result.GetProperty("description").ToString());
+        ///     Console.WriteLine(result.GetProperty("language").ToString());
         /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
+        /// ]]></code>
+        /// </example>
+        /// <remarks>
+        /// Below is the JSON schema for one item in the pageable response.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ConversationalAnalysisAuthoringProjectsMetadataValue</c>:
         /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   createdDateTime: string (ISO 8601 Format), # Required. Represents the project creation datetime.
+        ///   lastModifiedDateTime: string (ISO 8601 Format), # Required. Represents the project creation datetime.
+        ///   lastTrainedDateTime: string (ISO 8601 Format), # Optional. Represents the project last trained datetime.
+        ///   lastDeployedDateTime: string (ISO 8601 Format), # Optional. Represents the project last deployed datetime.
+        ///   projectKind: &quot;Conversation&quot; | &quot;Orchestration&quot;, # Required. Represents the project kind.
+        ///   settings: {
+        ///     confidenceThreshold: number, # Required. The threshold of the intent with the highest confidence, at which the prediction will automatically be changed to &quot;None&quot;.
+        ///   }, # Optional. The project settings.
+        ///   projectName: string, # Required. The new project name.
+        ///   multilingual: boolean, # Optional. Whether the project would be used for multiple languages or not.
+        ///   description: string, # Optional. The project description.
+        ///   language: string, # Required. The project language. This is BCP-47 representation of a language. For example, use &quot;en&quot; for English, &quot;en-gb&quot; for English (UK), &quot;es&quot; for Spanish etc.
         /// }
         /// </code>
         /// 
@@ -1819,40 +2321,43 @@ namespace Azure.AI.Language.Conversations.Authoring
 
         /// <summary> Lists the deployments belonging to a project. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> is an empty string, and was expected to be non-empty. </exception>
-        /// <remarks>
-        /// Schema for <c>Response Body</c>:
-        /// <code>{
-        ///   value: [
-        ///     {
-        ///       deploymentName: string,
-        ///       modelId: string,
-        ///       lastTrainedDateTime: string (ISO 8601 Format),
-        ///       lastDeployedDateTime: string (ISO 8601 Format),
-        ///       deploymentExpirationDate: ConversationalAnalysisAuthoringProjectDeploymentExpirationDate,
-        ///       modelTrainingConfigVersion: string
-        ///     }
-        ///   ],
-        ///   nextLink: string
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="AsyncPageable{T}"/> from the service containing a list of <see cref="BinaryData"/> objects. Details of the body schema for each item in the collection are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetDeploymentsAsync with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// await foreach (var data in client.GetDeploymentsAsync("<projectName>"))
+        /// {
+        ///     JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        ///     Console.WriteLine(result.GetProperty("deploymentName").ToString());
+        ///     Console.WriteLine(result.GetProperty("modelId").ToString());
+        ///     Console.WriteLine(result.GetProperty("lastTrainedDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("lastDeployedDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("deploymentExpirationDate").ToString());
+        ///     Console.WriteLine(result.GetProperty("modelTrainingConfigVersion").ToString());
         /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
+        /// ]]></code>
+        /// </example>
+        /// <remarks>
+        /// Below is the JSON schema for one item in the pageable response.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ConversationalAnalysisAuthoringProjectDeploymentsValue</c>:
         /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   deploymentName: string, # Required. Represents deployment name.
+        ///   modelId: string, # Required. Represents deployment modelId.
+        ///   lastTrainedDateTime: string (ISO 8601 Format), # Required. Represents deployment last trained time.
+        ///   lastDeployedDateTime: string (ISO 8601 Format), # Required. Represents deployment last deployed time.
+        ///   deploymentExpirationDate: string (date), # Required. Represents deployment expiration date in the runtime.
+        ///   modelTrainingConfigVersion: string, # Required. Represents model training config version.
         /// }
         /// </code>
         /// 
@@ -1883,40 +2388,43 @@ namespace Azure.AI.Language.Conversations.Authoring
 
         /// <summary> Lists the deployments belonging to a project. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> is an empty string, and was expected to be non-empty. </exception>
-        /// <remarks>
-        /// Schema for <c>Response Body</c>:
-        /// <code>{
-        ///   value: [
-        ///     {
-        ///       deploymentName: string,
-        ///       modelId: string,
-        ///       lastTrainedDateTime: string (ISO 8601 Format),
-        ///       lastDeployedDateTime: string (ISO 8601 Format),
-        ///       deploymentExpirationDate: ConversationalAnalysisAuthoringProjectDeploymentExpirationDate,
-        ///       modelTrainingConfigVersion: string
-        ///     }
-        ///   ],
-        ///   nextLink: string
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="Pageable{T}"/> from the service containing a list of <see cref="BinaryData"/> objects. Details of the body schema for each item in the collection are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetDeployments with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// foreach (var data in client.GetDeployments("<projectName>"))
+        /// {
+        ///     JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        ///     Console.WriteLine(result.GetProperty("deploymentName").ToString());
+        ///     Console.WriteLine(result.GetProperty("modelId").ToString());
+        ///     Console.WriteLine(result.GetProperty("lastTrainedDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("lastDeployedDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("deploymentExpirationDate").ToString());
+        ///     Console.WriteLine(result.GetProperty("modelTrainingConfigVersion").ToString());
         /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
+        /// ]]></code>
+        /// </example>
+        /// <remarks>
+        /// Below is the JSON schema for one item in the pageable response.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ConversationalAnalysisAuthoringProjectDeploymentsValue</c>:
         /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   deploymentName: string, # Required. Represents deployment name.
+        ///   modelId: string, # Required. Represents deployment modelId.
+        ///   lastTrainedDateTime: string (ISO 8601 Format), # Required. Represents deployment last trained time.
+        ///   lastDeployedDateTime: string (ISO 8601 Format), # Required. Represents deployment last deployed time.
+        ///   deploymentExpirationDate: string (date), # Required. Represents deployment expiration date in the runtime.
+        ///   modelTrainingConfigVersion: string, # Required. Represents model training config version.
         /// }
         /// </code>
         /// 
@@ -1947,40 +2455,43 @@ namespace Azure.AI.Language.Conversations.Authoring
 
         /// <summary> Lists the trained models belonging to a project. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> is an empty string, and was expected to be non-empty. </exception>
-        /// <remarks>
-        /// Schema for <c>Response Body</c>:
-        /// <code>{
-        ///   value: [
-        ///     {
-        ///       label: string,
-        ///       modelId: string,
-        ///       lastTrainedDateTime: string (ISO 8601 Format),
-        ///       lastTrainingDurationInSeconds: number,
-        ///       modelExpirationDate: ConversationalAnalysisAuthoringProjectTrainedModelExpirationDate,
-        ///       modelTrainingConfigVersion: string
-        ///     }
-        ///   ],
-        ///   nextLink: string
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="AsyncPageable{T}"/> from the service containing a list of <see cref="BinaryData"/> objects. Details of the body schema for each item in the collection are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetTrainedModelsAsync with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// await foreach (var data in client.GetTrainedModelsAsync("<projectName>"))
+        /// {
+        ///     JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        ///     Console.WriteLine(result.GetProperty("label").ToString());
+        ///     Console.WriteLine(result.GetProperty("modelId").ToString());
+        ///     Console.WriteLine(result.GetProperty("lastTrainedDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("lastTrainingDurationInSeconds").ToString());
+        ///     Console.WriteLine(result.GetProperty("modelExpirationDate").ToString());
+        ///     Console.WriteLine(result.GetProperty("modelTrainingConfigVersion").ToString());
         /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
+        /// ]]></code>
+        /// </example>
+        /// <remarks>
+        /// Below is the JSON schema for one item in the pageable response.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ConversationalAnalysisAuthoringProjectTrainedModelsValue</c>:
         /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   label: string, # Required. The trained model label.
+        ///   modelId: string, # Required. The model ID.
+        ///   lastTrainedDateTime: string (ISO 8601 Format), # Required. The last trained date time of the model.
+        ///   lastTrainingDurationInSeconds: number, # Required. The duration of the model&apos;s last training request in seconds.
+        ///   modelExpirationDate: string (date), # Required. The model expiration date.
+        ///   modelTrainingConfigVersion: string, # Required. The model training config version.
         /// }
         /// </code>
         /// 
@@ -2011,40 +2522,43 @@ namespace Azure.AI.Language.Conversations.Authoring
 
         /// <summary> Lists the trained models belonging to a project. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> is an empty string, and was expected to be non-empty. </exception>
-        /// <remarks>
-        /// Schema for <c>Response Body</c>:
-        /// <code>{
-        ///   value: [
-        ///     {
-        ///       label: string,
-        ///       modelId: string,
-        ///       lastTrainedDateTime: string (ISO 8601 Format),
-        ///       lastTrainingDurationInSeconds: number,
-        ///       modelExpirationDate: ConversationalAnalysisAuthoringProjectTrainedModelExpirationDate,
-        ///       modelTrainingConfigVersion: string
-        ///     }
-        ///   ],
-        ///   nextLink: string
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="Pageable{T}"/> from the service containing a list of <see cref="BinaryData"/> objects. Details of the body schema for each item in the collection are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetTrainedModels with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// foreach (var data in client.GetTrainedModels("<projectName>"))
+        /// {
+        ///     JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        ///     Console.WriteLine(result.GetProperty("label").ToString());
+        ///     Console.WriteLine(result.GetProperty("modelId").ToString());
+        ///     Console.WriteLine(result.GetProperty("lastTrainedDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("lastTrainingDurationInSeconds").ToString());
+        ///     Console.WriteLine(result.GetProperty("modelExpirationDate").ToString());
+        ///     Console.WriteLine(result.GetProperty("modelTrainingConfigVersion").ToString());
         /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
+        /// ]]></code>
+        /// </example>
+        /// <remarks>
+        /// Below is the JSON schema for one item in the pageable response.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ConversationalAnalysisAuthoringProjectTrainedModelsValue</c>:
         /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   label: string, # Required. The trained model label.
+        ///   modelId: string, # Required. The model ID.
+        ///   lastTrainedDateTime: string (ISO 8601 Format), # Required. The last trained date time of the model.
+        ///   lastTrainingDurationInSeconds: number, # Required. The duration of the model&apos;s last training request in seconds.
+        ///   modelExpirationDate: string (date), # Required. The model expiration date.
+        ///   modelTrainingConfigVersion: string, # Required. The model training config version.
         /// }
         /// </code>
         /// 
@@ -2077,50 +2591,78 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="trainedModelLabel"> The trained model label. </param>
         /// <param name="stringIndexType"> Specifies the method used to interpret string offsets. Set this to &quot;Utf16CodeUnit&quot; for .NET strings, which are encoded as UTF-16. Allowed values: &quot;Utf16CodeUnit&quot;. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/>, <paramref name="trainedModelLabel"/> or <paramref name="stringIndexType"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> or <paramref name="trainedModelLabel"/> is an empty string, and was expected to be non-empty. </exception>
-        /// <remarks>
-        /// Schema for <c>Response Body</c>:
-        /// <code>{
-        ///   value: [
-        ///     {
-        ///       text: string,
-        ///       language: string,
-        ///       entitiesResult: {
-        ///         expectedEntities: [
-        ///           {
-        ///             category: string,
-        ///             offset: number,
-        ///             length: number
-        ///           }
-        ///         ],
-        ///         predictedEntities: [UtteranceEntityEvaluationResult]
-        ///       },
-        ///       intentsResult: {
-        ///         expectedIntent: string,
-        ///         predictedIntent: string
-        ///       }
-        ///     }
-        ///   ],
-        ///   nextLink: string
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="AsyncPageable{T}"/> from the service containing a list of <see cref="BinaryData"/> objects. Details of the body schema for each item in the collection are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetModelEvaluationResultsAsync with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// await foreach (var data in client.GetModelEvaluationResultsAsync("<projectName>", "<trainedModelLabel>"))
+        /// {
+        ///     JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        ///     Console.WriteLine(result.GetProperty("text").ToString());
+        ///     Console.WriteLine(result.GetProperty("language").ToString());
+        ///     Console.WriteLine(result.GetProperty("entitiesResult").GetProperty("expectedEntities")[0].GetProperty("category").ToString());
+        ///     Console.WriteLine(result.GetProperty("entitiesResult").GetProperty("expectedEntities")[0].GetProperty("offset").ToString());
+        ///     Console.WriteLine(result.GetProperty("entitiesResult").GetProperty("expectedEntities")[0].GetProperty("length").ToString());
+        ///     Console.WriteLine(result.GetProperty("entitiesResult").GetProperty("predictedEntities")[0].GetProperty("category").ToString());
+        ///     Console.WriteLine(result.GetProperty("entitiesResult").GetProperty("predictedEntities")[0].GetProperty("offset").ToString());
+        ///     Console.WriteLine(result.GetProperty("entitiesResult").GetProperty("predictedEntities")[0].GetProperty("length").ToString());
+        ///     Console.WriteLine(result.GetProperty("intentsResult").GetProperty("expectedIntent").ToString());
+        ///     Console.WriteLine(result.GetProperty("intentsResult").GetProperty("predictedIntent").ToString());
         /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
+        /// ]]></code>
+        /// This sample shows how to call GetModelEvaluationResultsAsync with all parameters, and how to parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// await foreach (var data in client.GetModelEvaluationResultsAsync("<projectName>", "<trainedModelLabel>", <Utf16CodeUnit>))
+        /// {
+        ///     JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        ///     Console.WriteLine(result.GetProperty("text").ToString());
+        ///     Console.WriteLine(result.GetProperty("language").ToString());
+        ///     Console.WriteLine(result.GetProperty("entitiesResult").GetProperty("expectedEntities")[0].GetProperty("category").ToString());
+        ///     Console.WriteLine(result.GetProperty("entitiesResult").GetProperty("expectedEntities")[0].GetProperty("offset").ToString());
+        ///     Console.WriteLine(result.GetProperty("entitiesResult").GetProperty("expectedEntities")[0].GetProperty("length").ToString());
+        ///     Console.WriteLine(result.GetProperty("entitiesResult").GetProperty("predictedEntities")[0].GetProperty("category").ToString());
+        ///     Console.WriteLine(result.GetProperty("entitiesResult").GetProperty("predictedEntities")[0].GetProperty("offset").ToString());
+        ///     Console.WriteLine(result.GetProperty("entitiesResult").GetProperty("predictedEntities")[0].GetProperty("length").ToString());
+        ///     Console.WriteLine(result.GetProperty("intentsResult").GetProperty("expectedIntent").ToString());
+        ///     Console.WriteLine(result.GetProperty("intentsResult").GetProperty("predictedIntent").ToString());
+        /// }
+        /// ]]></code>
+        /// </example>
+        /// <remarks>
+        /// Below is the JSON schema for one item in the pageable response.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ConversationalAnalysisAuthoringEvaluationResultsValue</c>:
         /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   text: string, # Required. Represents the utterance text.
+        ///   language: string, # Required. Represents the utterance language. This is BCP-47 representation of a language. For example, use &quot;en&quot; for English, &quot;en-gb&quot; for English (UK), &quot;es&quot; for Spanish etc.
+        ///   entitiesResult: {
+        ///     expectedEntities: [
+        ///       {
+        ///         category: string, # Required. Represents the entity category.
+        ///         offset: number, # Required. Represents the entity offset index relative to the original text.
+        ///         length: number, # Required. Represents the entity length.
+        ///       }
+        ///     ], # Required. Represents the expected entity labels.
+        ///     predictedEntities: [UtteranceEntityEvaluationResult], # Required. Represents the predicted entity labels.
+        ///   }, # Required. Represents the entities results for the utterance.
+        ///   intentsResult: {
+        ///     expectedIntent: string, # Required. Represents the utterance&apos;s expected intent.
+        ///     predictedIntent: string, # Required. Represents the utterance&apos;s predicted intent.
+        ///   }, # Required. Represents the intents results for the utterance.
         /// }
         /// </code>
         /// 
@@ -2155,50 +2697,78 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="trainedModelLabel"> The trained model label. </param>
         /// <param name="stringIndexType"> Specifies the method used to interpret string offsets. Set this to &quot;Utf16CodeUnit&quot; for .NET strings, which are encoded as UTF-16. Allowed values: &quot;Utf16CodeUnit&quot;. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/>, <paramref name="trainedModelLabel"/> or <paramref name="stringIndexType"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> or <paramref name="trainedModelLabel"/> is an empty string, and was expected to be non-empty. </exception>
-        /// <remarks>
-        /// Schema for <c>Response Body</c>:
-        /// <code>{
-        ///   value: [
-        ///     {
-        ///       text: string,
-        ///       language: string,
-        ///       entitiesResult: {
-        ///         expectedEntities: [
-        ///           {
-        ///             category: string,
-        ///             offset: number,
-        ///             length: number
-        ///           }
-        ///         ],
-        ///         predictedEntities: [UtteranceEntityEvaluationResult]
-        ///       },
-        ///       intentsResult: {
-        ///         expectedIntent: string,
-        ///         predictedIntent: string
-        ///       }
-        ///     }
-        ///   ],
-        ///   nextLink: string
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="Pageable{T}"/> from the service containing a list of <see cref="BinaryData"/> objects. Details of the body schema for each item in the collection are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetModelEvaluationResults with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// foreach (var data in client.GetModelEvaluationResults("<projectName>", "<trainedModelLabel>"))
+        /// {
+        ///     JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        ///     Console.WriteLine(result.GetProperty("text").ToString());
+        ///     Console.WriteLine(result.GetProperty("language").ToString());
+        ///     Console.WriteLine(result.GetProperty("entitiesResult").GetProperty("expectedEntities")[0].GetProperty("category").ToString());
+        ///     Console.WriteLine(result.GetProperty("entitiesResult").GetProperty("expectedEntities")[0].GetProperty("offset").ToString());
+        ///     Console.WriteLine(result.GetProperty("entitiesResult").GetProperty("expectedEntities")[0].GetProperty("length").ToString());
+        ///     Console.WriteLine(result.GetProperty("entitiesResult").GetProperty("predictedEntities")[0].GetProperty("category").ToString());
+        ///     Console.WriteLine(result.GetProperty("entitiesResult").GetProperty("predictedEntities")[0].GetProperty("offset").ToString());
+        ///     Console.WriteLine(result.GetProperty("entitiesResult").GetProperty("predictedEntities")[0].GetProperty("length").ToString());
+        ///     Console.WriteLine(result.GetProperty("intentsResult").GetProperty("expectedIntent").ToString());
+        ///     Console.WriteLine(result.GetProperty("intentsResult").GetProperty("predictedIntent").ToString());
         /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
+        /// ]]></code>
+        /// This sample shows how to call GetModelEvaluationResults with all parameters, and how to parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// foreach (var data in client.GetModelEvaluationResults("<projectName>", "<trainedModelLabel>", <Utf16CodeUnit>))
+        /// {
+        ///     JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        ///     Console.WriteLine(result.GetProperty("text").ToString());
+        ///     Console.WriteLine(result.GetProperty("language").ToString());
+        ///     Console.WriteLine(result.GetProperty("entitiesResult").GetProperty("expectedEntities")[0].GetProperty("category").ToString());
+        ///     Console.WriteLine(result.GetProperty("entitiesResult").GetProperty("expectedEntities")[0].GetProperty("offset").ToString());
+        ///     Console.WriteLine(result.GetProperty("entitiesResult").GetProperty("expectedEntities")[0].GetProperty("length").ToString());
+        ///     Console.WriteLine(result.GetProperty("entitiesResult").GetProperty("predictedEntities")[0].GetProperty("category").ToString());
+        ///     Console.WriteLine(result.GetProperty("entitiesResult").GetProperty("predictedEntities")[0].GetProperty("offset").ToString());
+        ///     Console.WriteLine(result.GetProperty("entitiesResult").GetProperty("predictedEntities")[0].GetProperty("length").ToString());
+        ///     Console.WriteLine(result.GetProperty("intentsResult").GetProperty("expectedIntent").ToString());
+        ///     Console.WriteLine(result.GetProperty("intentsResult").GetProperty("predictedIntent").ToString());
+        /// }
+        /// ]]></code>
+        /// </example>
+        /// <remarks>
+        /// Below is the JSON schema for one item in the pageable response.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ConversationalAnalysisAuthoringEvaluationResultsValue</c>:
         /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   text: string, # Required. Represents the utterance text.
+        ///   language: string, # Required. Represents the utterance language. This is BCP-47 representation of a language. For example, use &quot;en&quot; for English, &quot;en-gb&quot; for English (UK), &quot;es&quot; for Spanish etc.
+        ///   entitiesResult: {
+        ///     expectedEntities: [
+        ///       {
+        ///         category: string, # Required. Represents the entity category.
+        ///         offset: number, # Required. Represents the entity offset index relative to the original text.
+        ///         length: number, # Required. Represents the entity length.
+        ///       }
+        ///     ], # Required. Represents the expected entity labels.
+        ///     predictedEntities: [UtteranceEntityEvaluationResult], # Required. Represents the predicted entity labels.
+        ///   }, # Required. Represents the entities results for the utterance.
+        ///   intentsResult: {
+        ///     expectedIntent: string, # Required. Represents the utterance&apos;s expected intent.
+        ///     predictedIntent: string, # Required. Represents the utterance&apos;s predicted intent.
+        ///   }, # Required. Represents the intents results for the utterance.
         /// }
         /// </code>
         /// 
@@ -2231,73 +2801,103 @@ namespace Azure.AI.Language.Conversations.Authoring
 
         /// <summary> Lists the non-expired training jobs created for a project. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> is an empty string, and was expected to be non-empty. </exception>
-        /// <remarks>
-        /// Schema for <c>Response Body</c>:
-        /// <code>{
-        ///   value: [
-        ///     {
-        ///       jobId: string,
-        ///       createdDateTime: string (ISO 8601 Format),
-        ///       lastUpdatedDateTime: string (ISO 8601 Format),
-        ///       expirationDateTime: string (ISO 8601 Format),
-        ///       status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
-        ///       warnings: [
-        ///         {
-        ///           code: string,
-        ///           message: string
-        ///         }
-        ///       ],
-        ///       errors: [
-        ///         {
-        ///           code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///           message: string,
-        ///           target: string,
-        ///           details: [Error],
-        ///           innererror: {
-        ///             code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///             message: string,
-        ///             details: Dictionary&lt;string, string&gt;,
-        ///             target: string,
-        ///             innererror: InnerErrorModel
-        ///           }
-        ///         }
-        ///       ],
-        ///       result: {
-        ///         modelLabel: string,
-        ///         trainingConfigVersion: string,
-        ///         trainingMode: &quot;advanced&quot; | &quot;standard&quot;,
-        ///         trainingStatus: {
-        ///           percentComplete: number,
-        ///           startDateTime: string (ISO 8601 Format),
-        ///           endDateTime: string (ISO 8601 Format),
-        ///           status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;
-        ///         },
-        ///         evaluationStatus: SubTrainingJobState,
-        ///         estimatedEndDateTime: string (ISO 8601 Format)
-        ///       }
-        ///     }
-        ///   ],
-        ///   nextLink: string
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="AsyncPageable{T}"/> from the service containing a list of <see cref="BinaryData"/> objects. Details of the body schema for each item in the collection are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetTrainingJobsAsync with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// await foreach (var data in client.GetTrainingJobsAsync("<projectName>"))
+        /// {
+        ///     JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        ///     Console.WriteLine(result.GetProperty("result").GetProperty("modelLabel").ToString());
+        ///     Console.WriteLine(result.GetProperty("result").GetProperty("trainingConfigVersion").ToString());
+        ///     Console.WriteLine(result.GetProperty("result").GetProperty("trainingMode").ToString());
+        ///     Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("percentComplete").ToString());
+        ///     Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("startDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("endDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("status").ToString());
+        ///     Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("percentComplete").ToString());
+        ///     Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("startDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("endDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("status").ToString());
+        ///     Console.WriteLine(result.GetProperty("result").GetProperty("estimatedEndDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("jobId").ToString());
+        ///     Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("status").ToString());
+        ///     Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        ///     Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
         /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
+        /// ]]></code>
+        /// </example>
+        /// <remarks>
+        /// Below is the JSON schema for one item in the pageable response.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ConversationalAnalysisAuthoringTrainingJobsValue</c>:
         /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
+        ///   result: {
+        ///     modelLabel: string, # Required. Represents trained model label.
+        ///     trainingConfigVersion: string, # Required. Represents training config version.
+        ///     trainingMode: &quot;advanced&quot; | &quot;standard&quot;, # Optional. Represents the mode of the training operation.
+        ///     trainingStatus: {
+        ///       percentComplete: number, # Required. Represents progress percentage.
+        ///       startDateTime: string (ISO 8601 Format), # Optional. Represents the start date time.
+        ///       endDateTime: string (ISO 8601 Format), # Optional. Represents the end date time.
+        ///       status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. Represents the status of the sub-operation.
+        ///     }, # Required. Represents the model training status.
+        ///     evaluationStatus: SubTrainingJobState, # Optional. Represents model evaluation status.
+        ///     estimatedEndDateTime: string (ISO 8601 Format), # Optional. Represents the estimated end date time for training and evaluation.
+        ///   }, # Required. Represents training tasks detailed result.
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
+        ///   warnings: [
+        ///     {
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   }
+        ///   ], # Optional. The warnings that were encountered while executing the job.
+        ///   errors: [
+        ///     {
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
+        ///       innererror: {
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
+        ///     }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -2328,73 +2928,103 @@ namespace Azure.AI.Language.Conversations.Authoring
 
         /// <summary> Lists the non-expired training jobs created for a project. </summary>
         /// <param name="projectName"> The name of the project to use. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> is an empty string, and was expected to be non-empty. </exception>
-        /// <remarks>
-        /// Schema for <c>Response Body</c>:
-        /// <code>{
-        ///   value: [
-        ///     {
-        ///       jobId: string,
-        ///       createdDateTime: string (ISO 8601 Format),
-        ///       lastUpdatedDateTime: string (ISO 8601 Format),
-        ///       expirationDateTime: string (ISO 8601 Format),
-        ///       status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
-        ///       warnings: [
-        ///         {
-        ///           code: string,
-        ///           message: string
-        ///         }
-        ///       ],
-        ///       errors: [
-        ///         {
-        ///           code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///           message: string,
-        ///           target: string,
-        ///           details: [Error],
-        ///           innererror: {
-        ///             code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///             message: string,
-        ///             details: Dictionary&lt;string, string&gt;,
-        ///             target: string,
-        ///             innererror: InnerErrorModel
-        ///           }
-        ///         }
-        ///       ],
-        ///       result: {
-        ///         modelLabel: string,
-        ///         trainingConfigVersion: string,
-        ///         trainingMode: &quot;advanced&quot; | &quot;standard&quot;,
-        ///         trainingStatus: {
-        ///           percentComplete: number,
-        ///           startDateTime: string (ISO 8601 Format),
-        ///           endDateTime: string (ISO 8601 Format),
-        ///           status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;
-        ///         },
-        ///         evaluationStatus: SubTrainingJobState,
-        ///         estimatedEndDateTime: string (ISO 8601 Format)
-        ///       }
-        ///     }
-        ///   ],
-        ///   nextLink: string
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="Pageable{T}"/> from the service containing a list of <see cref="BinaryData"/> objects. Details of the body schema for each item in the collection are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetTrainingJobs with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// foreach (var data in client.GetTrainingJobs("<projectName>"))
+        /// {
+        ///     JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        ///     Console.WriteLine(result.GetProperty("result").GetProperty("modelLabel").ToString());
+        ///     Console.WriteLine(result.GetProperty("result").GetProperty("trainingConfigVersion").ToString());
+        ///     Console.WriteLine(result.GetProperty("result").GetProperty("trainingMode").ToString());
+        ///     Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("percentComplete").ToString());
+        ///     Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("startDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("endDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("status").ToString());
+        ///     Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("percentComplete").ToString());
+        ///     Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("startDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("endDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("status").ToString());
+        ///     Console.WriteLine(result.GetProperty("result").GetProperty("estimatedEndDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("jobId").ToString());
+        ///     Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        ///     Console.WriteLine(result.GetProperty("status").ToString());
+        ///     Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        ///     Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        ///     Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
         /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
+        /// ]]></code>
+        /// </example>
+        /// <remarks>
+        /// Below is the JSON schema for one item in the pageable response.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ConversationalAnalysisAuthoringTrainingJobsValue</c>:
         /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
+        ///   result: {
+        ///     modelLabel: string, # Required. Represents trained model label.
+        ///     trainingConfigVersion: string, # Required. Represents training config version.
+        ///     trainingMode: &quot;advanced&quot; | &quot;standard&quot;, # Optional. Represents the mode of the training operation.
+        ///     trainingStatus: {
+        ///       percentComplete: number, # Required. Represents progress percentage.
+        ///       startDateTime: string (ISO 8601 Format), # Optional. Represents the start date time.
+        ///       endDateTime: string (ISO 8601 Format), # Optional. Represents the end date time.
+        ///       status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. Represents the status of the sub-operation.
+        ///     }, # Required. Represents the model training status.
+        ///     evaluationStatus: SubTrainingJobState, # Optional. Represents model evaluation status.
+        ///     estimatedEndDateTime: string (ISO 8601 Format), # Optional. Represents the estimated end date time for training and evaluation.
+        ///   }, # Required. Represents training tasks detailed result.
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
+        ///   warnings: [
+        ///     {
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   }
+        ///   ], # Optional. The warnings that were encountered while executing the job.
+        ///   errors: [
+        ///     {
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
+        ///       innererror: {
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
+        ///     }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -2425,35 +3055,34 @@ namespace Azure.AI.Language.Conversations.Authoring
 
         /// <summary> Lists the supported languages for the given project type. </summary>
         /// <param name="projectKind"> The project kind. Allowed values: &quot;Conversation&quot; | &quot;Orchestration&quot;. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectKind"/> is null. </exception>
-        /// <remarks>
-        /// Schema for <c>Response Body</c>:
-        /// <code>{
-        ///   value: [
-        ///     {
-        ///       languageName: string,
-        ///       languageCode: string
-        ///     }
-        ///   ],
-        ///   nextLink: string
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="AsyncPageable{T}"/> from the service containing a list of <see cref="BinaryData"/> objects. Details of the body schema for each item in the collection are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetSupportedLanguagesAsync with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// await foreach (var data in client.GetSupportedLanguagesAsync("<projectKind>"))
+        /// {
+        ///     JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        ///     Console.WriteLine(result.GetProperty("languageName").ToString());
+        ///     Console.WriteLine(result.GetProperty("languageCode").ToString());
         /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
+        /// ]]></code>
+        /// </example>
+        /// <remarks>
+        /// Below is the JSON schema for one item in the pageable response.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ConversationalAnalysisAuthoringSupportedLanguagesValue</c>:
         /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   languageName: string, # Required. The language name.
+        ///   languageCode: string, # Required. The language code. This is BCP-47 representation of a language. For example, &quot;en&quot; for English, &quot;en-gb&quot; for English (UK), &quot;es&quot; for Spanish etc.
         /// }
         /// </code>
         /// 
@@ -2484,35 +3113,34 @@ namespace Azure.AI.Language.Conversations.Authoring
 
         /// <summary> Lists the supported languages for the given project type. </summary>
         /// <param name="projectKind"> The project kind. Allowed values: &quot;Conversation&quot; | &quot;Orchestration&quot;. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectKind"/> is null. </exception>
-        /// <remarks>
-        /// Schema for <c>Response Body</c>:
-        /// <code>{
-        ///   value: [
-        ///     {
-        ///       languageName: string,
-        ///       languageCode: string
-        ///     }
-        ///   ],
-        ///   nextLink: string
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="Pageable{T}"/> from the service containing a list of <see cref="BinaryData"/> objects. Details of the body schema for each item in the collection are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetSupportedLanguages with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// foreach (var data in client.GetSupportedLanguages("<projectKind>"))
+        /// {
+        ///     JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        ///     Console.WriteLine(result.GetProperty("languageName").ToString());
+        ///     Console.WriteLine(result.GetProperty("languageCode").ToString());
         /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
+        /// ]]></code>
+        /// </example>
+        /// <remarks>
+        /// Below is the JSON schema for one item in the pageable response.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ConversationalAnalysisAuthoringSupportedLanguagesValue</c>:
         /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   languageName: string, # Required. The language name.
+        ///   languageCode: string, # Required. The language code. This is BCP-47 representation of a language. For example, &quot;en&quot; for English, &quot;en-gb&quot; for English (UK), &quot;es&quot; for Spanish etc.
         /// }
         /// </code>
         /// 
@@ -2544,35 +3172,49 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Lists the supported prebuilt entities that can be used while creating composed entities. </summary>
         /// <param name="language"> The language to get supported prebuilt entities for. Required if multilingual is false. This is BCP-47 representation of a language. For example, use &quot;en&quot; for English, &quot;en-gb&quot; for English (UK), &quot;es&quot; for Spanish etc. </param>
         /// <param name="multilingual"> Whether to get the support prebuilt entities for multilingual or monolingual projects. If true, the language parameter is ignored. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
-        /// <remarks>
-        /// Schema for <c>Response Body</c>:
-        /// <code>{
-        ///   value: [
-        ///     {
-        ///       category: string,
-        ///       description: string,
-        ///       examples: string
-        ///     }
-        ///   ],
-        ///   nextLink: string
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="AsyncPageable{T}"/> from the service containing a list of <see cref="BinaryData"/> objects. Details of the body schema for each item in the collection are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetSupportedPrebuiltEntitiesAsync and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// await foreach (var data in client.GetSupportedPrebuiltEntitiesAsync())
+        /// {
+        ///     JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        ///     Console.WriteLine(result.GetProperty("category").ToString());
+        ///     Console.WriteLine(result.GetProperty("description").ToString());
+        ///     Console.WriteLine(result.GetProperty("examples").ToString());
         /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
+        /// ]]></code>
+        /// This sample shows how to call GetSupportedPrebuiltEntitiesAsync with all parameters, and how to parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// await foreach (var data in client.GetSupportedPrebuiltEntitiesAsync("<language>", true))
+        /// {
+        ///     JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        ///     Console.WriteLine(result.GetProperty("category").ToString());
+        ///     Console.WriteLine(result.GetProperty("description").ToString());
+        ///     Console.WriteLine(result.GetProperty("examples").ToString());
+        /// }
+        /// ]]></code>
+        /// </example>
+        /// <remarks>
+        /// Below is the JSON schema for one item in the pageable response.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ConversationalAnalysisAuthoringPrebuiltEntitiesValue</c>:
         /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   category: string, # Required. The prebuilt entity category.
+        ///   description: string, # Required. The description.
+        ///   examples: string, # Required. English examples for the entity.
         /// }
         /// </code>
         /// 
@@ -2602,35 +3244,49 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Lists the supported prebuilt entities that can be used while creating composed entities. </summary>
         /// <param name="language"> The language to get supported prebuilt entities for. Required if multilingual is false. This is BCP-47 representation of a language. For example, use &quot;en&quot; for English, &quot;en-gb&quot; for English (UK), &quot;es&quot; for Spanish etc. </param>
         /// <param name="multilingual"> Whether to get the support prebuilt entities for multilingual or monolingual projects. If true, the language parameter is ignored. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
-        /// <remarks>
-        /// Schema for <c>Response Body</c>:
-        /// <code>{
-        ///   value: [
-        ///     {
-        ///       category: string,
-        ///       description: string,
-        ///       examples: string
-        ///     }
-        ///   ],
-        ///   nextLink: string
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="Pageable{T}"/> from the service containing a list of <see cref="BinaryData"/> objects. Details of the body schema for each item in the collection are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetSupportedPrebuiltEntities and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// foreach (var data in client.GetSupportedPrebuiltEntities())
+        /// {
+        ///     JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        ///     Console.WriteLine(result.GetProperty("category").ToString());
+        ///     Console.WriteLine(result.GetProperty("description").ToString());
+        ///     Console.WriteLine(result.GetProperty("examples").ToString());
         /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
+        /// ]]></code>
+        /// This sample shows how to call GetSupportedPrebuiltEntities with all parameters, and how to parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// foreach (var data in client.GetSupportedPrebuiltEntities("<language>", true))
+        /// {
+        ///     JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        ///     Console.WriteLine(result.GetProperty("category").ToString());
+        ///     Console.WriteLine(result.GetProperty("description").ToString());
+        ///     Console.WriteLine(result.GetProperty("examples").ToString());
+        /// }
+        /// ]]></code>
+        /// </example>
+        /// <remarks>
+        /// Below is the JSON schema for one item in the pageable response.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ConversationalAnalysisAuthoringPrebuiltEntitiesValue</c>:
         /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   category: string, # Required. The prebuilt entity category.
+        ///   description: string, # Required. The description.
+        ///   examples: string, # Required. English examples for the entity.
         /// }
         /// </code>
         /// 
@@ -2659,35 +3315,34 @@ namespace Azure.AI.Language.Conversations.Authoring
 
         /// <summary> Lists the support training config version for a given project type. </summary>
         /// <param name="projectKind"> The project kind. Allowed values: &quot;Conversation&quot; | &quot;Orchestration&quot;. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectKind"/> is null. </exception>
-        /// <remarks>
-        /// Schema for <c>Response Body</c>:
-        /// <code>{
-        ///   value: [
-        ///     {
-        ///       trainingConfigVersion: string,
-        ///       modelExpirationDate: ConversationalAnalysisAuthoringTrainingConfigVersionModelExpirationDate
-        ///     }
-        ///   ],
-        ///   nextLink: string
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="AsyncPageable{T}"/> from the service containing a list of <see cref="BinaryData"/> objects. Details of the body schema for each item in the collection are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetTrainingConfigVersionsAsync with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// await foreach (var data in client.GetTrainingConfigVersionsAsync("<projectKind>"))
+        /// {
+        ///     JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        ///     Console.WriteLine(result.GetProperty("trainingConfigVersion").ToString());
+        ///     Console.WriteLine(result.GetProperty("modelExpirationDate").ToString());
         /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
+        /// ]]></code>
+        /// </example>
+        /// <remarks>
+        /// Below is the JSON schema for one item in the pageable response.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ConversationalAnalysisAuthoringTrainingConfigVersionsValue</c>:
         /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   trainingConfigVersion: string, # Required. Represents the version of the config.
+        ///   modelExpirationDate: string (date), # Required. Represents the training config version expiration date.
         /// }
         /// </code>
         /// 
@@ -2718,35 +3373,34 @@ namespace Azure.AI.Language.Conversations.Authoring
 
         /// <summary> Lists the support training config version for a given project type. </summary>
         /// <param name="projectKind"> The project kind. Allowed values: &quot;Conversation&quot; | &quot;Orchestration&quot;. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectKind"/> is null. </exception>
-        /// <remarks>
-        /// Schema for <c>Response Body</c>:
-        /// <code>{
-        ///   value: [
-        ///     {
-        ///       trainingConfigVersion: string,
-        ///       modelExpirationDate: ConversationalAnalysisAuthoringTrainingConfigVersionModelExpirationDate
-        ///     }
-        ///   ],
-        ///   nextLink: string
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="Pageable{T}"/> from the service containing a list of <see cref="BinaryData"/> objects. Details of the body schema for each item in the collection are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call GetTrainingConfigVersions with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// foreach (var data in client.GetTrainingConfigVersions("<projectKind>"))
+        /// {
+        ///     JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        ///     Console.WriteLine(result.GetProperty("trainingConfigVersion").ToString());
+        ///     Console.WriteLine(result.GetProperty("modelExpirationDate").ToString());
         /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
+        /// ]]></code>
+        /// </example>
+        /// <remarks>
+        /// Below is the JSON schema for one item in the pageable response.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ConversationalAnalysisAuthoringTrainingConfigVersionsValue</c>:
         /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   trainingConfigVersion: string, # Required. Represents the version of the config.
+        ///   modelExpirationDate: string (date), # Required. Represents the training config version expiration date.
         /// }
         /// </code>
         /// 
@@ -2778,55 +3432,78 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Deletes a project. </summary>
         /// <param name="waitUntil"> <see cref="WaitUntil.Completed"/> if the method should wait to return until the long-running operation has completed on the service; <see cref="WaitUntil.Started"/> if it should return after starting the operation. For more information on long-running operations, please see <see href="https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/core/Azure.Core/samples/LongRunningOperations.md"> Azure.Core Long-Running Operation samples</see>. </param>
         /// <param name="projectName"> The name of the project to use. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="Operation{T}"/> from the service that will contain a <see cref="BinaryData"/> object once the asynchronous operation on the service has completed. Details of the body schema for the operation's final value are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call DeleteProjectAsync with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var operation = await client.DeleteProjectAsync(WaitUntil.Completed, "<projectName>");
+        /// 
+        /// BinaryData data = await operation.WaitForCompletionAsync();
+        /// JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ProjectDeletionJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ]
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -2852,55 +3529,78 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Deletes a project. </summary>
         /// <param name="waitUntil"> <see cref="WaitUntil.Completed"/> if the method should wait to return until the long-running operation has completed on the service; <see cref="WaitUntil.Started"/> if it should return after starting the operation. For more information on long-running operations, please see <see href="https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/core/Azure.Core/samples/LongRunningOperations.md"> Azure.Core Long-Running Operation samples</see>. </param>
         /// <param name="projectName"> The name of the project to use. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="Operation{T}"/> from the service that will contain a <see cref="BinaryData"/> object once the asynchronous operation on the service has completed. Details of the body schema for the operation's final value are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call DeleteProject with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var operation = client.DeleteProject(WaitUntil.Completed, "<projectName>");
+        /// 
+        /// BinaryData data = operation.WaitForCompletion();
+        /// JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ProjectDeletionJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ]
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -2929,56 +3629,92 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <param name="exportedProjectFormat"> The format of the exported project file to use. Allowed values: &quot;Conversation&quot; | &quot;Luis&quot;. </param>
         /// <param name="assetKind"> Kind of asset to export. </param>
         /// <param name="stringIndexType"> Specifies the method used to interpret string offsets. Set this to &quot;Utf16CodeUnit&quot; for .NET strings, which are encoded as UTF-16. Allowed values: &quot;Utf16CodeUnit&quot;. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="stringIndexType"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="Operation{T}"/> from the service that will contain a <see cref="BinaryData"/> object once the asynchronous operation on the service has completed. Details of the body schema for the operation's final value are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call ExportProjectAsync with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var operation = await client.ExportProjectAsync(WaitUntil.Completed, "<projectName>");
+        /// 
+        /// BinaryData data = await operation.WaitForCompletionAsync();
+        /// JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        /// Console.WriteLine(result.ToString());
+        /// ]]></code>
+        /// This sample shows how to call ExportProjectAsync with all parameters, and how to parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var operation = await client.ExportProjectAsync(WaitUntil.Completed, "<projectName>", "<exportedProjectFormat>", "<assetKind>", <Utf16CodeUnit>);
+        /// 
+        /// BinaryData data = await operation.WaitForCompletionAsync();
+        /// JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        /// Console.WriteLine(result.GetProperty("resultUrl").ToString());
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ExportProjectJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   resultUrl: string, # Optional. The URL to use in order to download the exported project.
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ],
-        ///   resultUrl: string
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -3008,56 +3744,92 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <param name="exportedProjectFormat"> The format of the exported project file to use. Allowed values: &quot;Conversation&quot; | &quot;Luis&quot;. </param>
         /// <param name="assetKind"> Kind of asset to export. </param>
         /// <param name="stringIndexType"> Specifies the method used to interpret string offsets. Set this to &quot;Utf16CodeUnit&quot; for .NET strings, which are encoded as UTF-16. Allowed values: &quot;Utf16CodeUnit&quot;. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="stringIndexType"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="Operation{T}"/> from the service that will contain a <see cref="BinaryData"/> object once the asynchronous operation on the service has completed. Details of the body schema for the operation's final value are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call ExportProject with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var operation = client.ExportProject(WaitUntil.Completed, "<projectName>");
+        /// 
+        /// BinaryData data = operation.WaitForCompletion();
+        /// JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        /// Console.WriteLine(result.ToString());
+        /// ]]></code>
+        /// This sample shows how to call ExportProject with all parameters, and how to parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var operation = client.ExportProject(WaitUntil.Completed, "<projectName>", "<exportedProjectFormat>", "<assetKind>", <Utf16CodeUnit>);
+        /// 
+        /// BinaryData data = operation.WaitForCompletion();
+        /// JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        /// Console.WriteLine(result.GetProperty("resultUrl").ToString());
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ExportProjectJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   resultUrl: string, # Optional. The URL to use in order to download the exported project.
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ],
-        ///   resultUrl: string
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -3084,76 +3856,191 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Triggers a job to import a project. If a project with the same name already exists, the data of that project is replaced. </summary>
         /// <param name="waitUntil"> <see cref="WaitUntil.Completed"/> if the method should wait to return until the long-running operation has completed on the service; <see cref="WaitUntil.Started"/> if it should return after starting the operation. For more information on long-running operations, please see <see href="https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/core/Azure.Core/samples/LongRunningOperations.md"> Azure.Core Long-Running Operation samples</see>. </param>
         /// <param name="projectName"> The name of the project to use. </param>
-        /// <param name="content"> The content to send as the body of the request. </param>
+        /// <param name="content"> The content to send as the body of the request. Details of the request body schema are in the Remarks section below. </param>
         /// <param name="exportedProjectFormat"> The format of the exported project file to use. Allowed values: &quot;Conversation&quot; | &quot;Luis&quot;. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="content"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> is an empty string, and was expected to be non-empty. </exception>
-        /// <remarks>
-        /// Schema for <c>Request Body</c>:
-        /// <code>{
-        ///   projectFileVersion: string (required),
-        ///   stringIndexType: &quot;Utf16CodeUnit&quot; (required),
-        ///   metadata: {
-        ///     projectKind: &quot;Conversation&quot; | &quot;Orchestration&quot; (required),
-        ///     settings: {
-        ///       confidenceThreshold: number (required)
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="Operation{T}"/> from the service that will contain a <see cref="BinaryData"/> object once the asynchronous operation on the service has completed. Details of the body schema for the operation's final value are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call ImportProjectAsync with required parameters and request content, and how to parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var data = new {
+        ///     projectFileVersion = "<projectFileVersion>",
+        ///     stringIndexType = "Utf16CodeUnit",
+        ///     metadata = new {
+        ///         projectKind = "Conversation",
+        ///         projectName = "<projectName>",
+        ///         language = "<language>",
         ///     },
-        ///     projectName: string (required),
-        ///     multilingual: boolean,
-        ///     description: string,
-        ///     language: string (required)
-        ///   } (required),
+        /// };
+        /// 
+        /// var operation = await client.ImportProjectAsync(WaitUntil.Completed, "<projectName>", RequestContent.Create(data));
+        /// 
+        /// BinaryData data = await operation.WaitForCompletionAsync();
+        /// JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// ]]></code>
+        /// This sample shows how to call ImportProjectAsync with all parameters and request content, and how to parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var data = new {
+        ///     projectFileVersion = "<projectFileVersion>",
+        ///     stringIndexType = "Utf16CodeUnit",
+        ///     metadata = new {
+        ///         projectKind = "Conversation",
+        ///         settings = new {
+        ///             confidenceThreshold = 123.45f,
+        ///         },
+        ///         projectName = "<projectName>",
+        ///         multilingual = true,
+        ///         description = "<description>",
+        ///         language = "<language>",
+        ///     },
+        ///     assets = new {
+        ///         intents = new[] {
+        ///             new {
+        ///                 category = "<category>",
+        ///             }
+        ///         },
+        ///         entities = new[] {
+        ///             new {
+        ///                 category = "<category>",
+        ///                 compositionSetting = "returnLongestOverlap",
+        ///                 list = new {
+        ///                     sublists = new[] {
+        ///                         new {
+        ///                             listKey = "<listKey>",
+        ///                             synonyms = new[] {
+        ///                                 new {
+        ///                                     language = "<language>",
+        ///                                     values = new[] {
+        ///                                         "<String>"
+        ///                                     },
+        ///                                 }
+        ///                             },
+        ///                         }
+        ///                     },
+        ///                 },
+        ///                 prebuilts = new[] {
+        ///                     new {
+        ///                         category = "<category>",
+        ///                     }
+        ///                 },
+        ///             }
+        ///         },
+        ///         utterances = new[] {
+        ///             new {
+        ///                 entities = new[] {
+        ///                     new {
+        ///                         category = "<category>",
+        ///                         offset = 1234,
+        ///                         length = 1234,
+        ///                     }
+        ///                 },
+        ///                 text = "<text>",
+        ///                 language = "<language>",
+        ///                 intent = "<intent>",
+        ///                 dataset = "<dataset>",
+        ///             }
+        ///         },
+        ///         projectKind = "Conversation",
+        ///     },
+        /// };
+        /// 
+        /// var operation = await client.ImportProjectAsync(WaitUntil.Completed, "<projectName>", RequestContent.Create(data), "<exportedProjectFormat>");
+        /// 
+        /// BinaryData data = await operation.WaitForCompletionAsync();
+        /// JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
+        /// <remarks>
+        /// Below is the JSON schema for the request and response payloads.
+        /// 
+        /// Request Body:
+        /// 
+        /// Schema for <c>ExportedProject</c>:
+        /// <code>{
+        ///   projectFileVersion: string, # Required. The version of the exported file.
+        ///   stringIndexType: &quot;Utf16CodeUnit&quot;, # Required. Specifies the method used to interpret string offsets. For additional information see https://aka.ms/text-analytics-offsets.
+        ///   metadata: {
+        ///     projectKind: &quot;Conversation&quot; | &quot;Orchestration&quot;, # Required. Represents the project kind.
+        ///     settings: {
+        ///       confidenceThreshold: number, # Required. The threshold of the intent with the highest confidence, at which the prediction will automatically be changed to &quot;None&quot;.
+        ///     }, # Optional. The project settings.
+        ///     projectName: string, # Required. The new project name.
+        ///     multilingual: boolean, # Optional. Whether the project would be used for multiple languages or not.
+        ///     description: string, # Optional. The project description.
+        ///     language: string, # Required. The project language. This is BCP-47 representation of a language. For example, use &quot;en&quot; for English, &quot;en-gb&quot; for English (UK), &quot;es&quot; for Spanish etc.
+        ///   }, # Required. Represents the project metadata.
         ///   assets: {
-        ///     projectKind: &quot;Conversation&quot; | &quot;Orchestration&quot; (required)
-        ///   }
+        ///     projectKind: &quot;Conversation&quot; | &quot;Orchestration&quot;, # Required. The type of project containing the assets.
+        ///   }, # Optional. Represents the project assets.
         /// }
         /// </code>
-        /// Schema for <c>Response Body</c>:
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ImportProjectJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ]
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -3180,76 +4067,191 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Triggers a job to import a project. If a project with the same name already exists, the data of that project is replaced. </summary>
         /// <param name="waitUntil"> <see cref="WaitUntil.Completed"/> if the method should wait to return until the long-running operation has completed on the service; <see cref="WaitUntil.Started"/> if it should return after starting the operation. For more information on long-running operations, please see <see href="https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/core/Azure.Core/samples/LongRunningOperations.md"> Azure.Core Long-Running Operation samples</see>. </param>
         /// <param name="projectName"> The name of the project to use. </param>
-        /// <param name="content"> The content to send as the body of the request. </param>
+        /// <param name="content"> The content to send as the body of the request. Details of the request body schema are in the Remarks section below. </param>
         /// <param name="exportedProjectFormat"> The format of the exported project file to use. Allowed values: &quot;Conversation&quot; | &quot;Luis&quot;. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="content"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> is an empty string, and was expected to be non-empty. </exception>
-        /// <remarks>
-        /// Schema for <c>Request Body</c>:
-        /// <code>{
-        ///   projectFileVersion: string (required),
-        ///   stringIndexType: &quot;Utf16CodeUnit&quot; (required),
-        ///   metadata: {
-        ///     projectKind: &quot;Conversation&quot; | &quot;Orchestration&quot; (required),
-        ///     settings: {
-        ///       confidenceThreshold: number (required)
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="Operation{T}"/> from the service that will contain a <see cref="BinaryData"/> object once the asynchronous operation on the service has completed. Details of the body schema for the operation's final value are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call ImportProject with required parameters and request content, and how to parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var data = new {
+        ///     projectFileVersion = "<projectFileVersion>",
+        ///     stringIndexType = "Utf16CodeUnit",
+        ///     metadata = new {
+        ///         projectKind = "Conversation",
+        ///         projectName = "<projectName>",
+        ///         language = "<language>",
         ///     },
-        ///     projectName: string (required),
-        ///     multilingual: boolean,
-        ///     description: string,
-        ///     language: string (required)
-        ///   } (required),
+        /// };
+        /// 
+        /// var operation = client.ImportProject(WaitUntil.Completed, "<projectName>", RequestContent.Create(data));
+        /// 
+        /// BinaryData data = operation.WaitForCompletion();
+        /// JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// ]]></code>
+        /// This sample shows how to call ImportProject with all parameters and request content, and how to parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var data = new {
+        ///     projectFileVersion = "<projectFileVersion>",
+        ///     stringIndexType = "Utf16CodeUnit",
+        ///     metadata = new {
+        ///         projectKind = "Conversation",
+        ///         settings = new {
+        ///             confidenceThreshold = 123.45f,
+        ///         },
+        ///         projectName = "<projectName>",
+        ///         multilingual = true,
+        ///         description = "<description>",
+        ///         language = "<language>",
+        ///     },
+        ///     assets = new {
+        ///         intents = new[] {
+        ///             new {
+        ///                 category = "<category>",
+        ///             }
+        ///         },
+        ///         entities = new[] {
+        ///             new {
+        ///                 category = "<category>",
+        ///                 compositionSetting = "returnLongestOverlap",
+        ///                 list = new {
+        ///                     sublists = new[] {
+        ///                         new {
+        ///                             listKey = "<listKey>",
+        ///                             synonyms = new[] {
+        ///                                 new {
+        ///                                     language = "<language>",
+        ///                                     values = new[] {
+        ///                                         "<String>"
+        ///                                     },
+        ///                                 }
+        ///                             },
+        ///                         }
+        ///                     },
+        ///                 },
+        ///                 prebuilts = new[] {
+        ///                     new {
+        ///                         category = "<category>",
+        ///                     }
+        ///                 },
+        ///             }
+        ///         },
+        ///         utterances = new[] {
+        ///             new {
+        ///                 entities = new[] {
+        ///                     new {
+        ///                         category = "<category>",
+        ///                         offset = 1234,
+        ///                         length = 1234,
+        ///                     }
+        ///                 },
+        ///                 text = "<text>",
+        ///                 language = "<language>",
+        ///                 intent = "<intent>",
+        ///                 dataset = "<dataset>",
+        ///             }
+        ///         },
+        ///         projectKind = "Conversation",
+        ///     },
+        /// };
+        /// 
+        /// var operation = client.ImportProject(WaitUntil.Completed, "<projectName>", RequestContent.Create(data), "<exportedProjectFormat>");
+        /// 
+        /// BinaryData data = operation.WaitForCompletion();
+        /// JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
+        /// <remarks>
+        /// Below is the JSON schema for the request and response payloads.
+        /// 
+        /// Request Body:
+        /// 
+        /// Schema for <c>ExportedProject</c>:
+        /// <code>{
+        ///   projectFileVersion: string, # Required. The version of the exported file.
+        ///   stringIndexType: &quot;Utf16CodeUnit&quot;, # Required. Specifies the method used to interpret string offsets. For additional information see https://aka.ms/text-analytics-offsets.
+        ///   metadata: {
+        ///     projectKind: &quot;Conversation&quot; | &quot;Orchestration&quot;, # Required. Represents the project kind.
+        ///     settings: {
+        ///       confidenceThreshold: number, # Required. The threshold of the intent with the highest confidence, at which the prediction will automatically be changed to &quot;None&quot;.
+        ///     }, # Optional. The project settings.
+        ///     projectName: string, # Required. The new project name.
+        ///     multilingual: boolean, # Optional. Whether the project would be used for multiple languages or not.
+        ///     description: string, # Optional. The project description.
+        ///     language: string, # Required. The project language. This is BCP-47 representation of a language. For example, use &quot;en&quot; for English, &quot;en-gb&quot; for English (UK), &quot;es&quot; for Spanish etc.
+        ///   }, # Required. Represents the project metadata.
         ///   assets: {
-        ///     projectKind: &quot;Conversation&quot; | &quot;Orchestration&quot; (required)
-        ///   }
+        ///     projectKind: &quot;Conversation&quot; | &quot;Orchestration&quot;, # Required. The type of project containing the assets.
+        ///   }, # Optional. Represents the project assets.
         /// }
         /// </code>
-        /// Schema for <c>Response Body</c>:
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ImportProjectJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ]
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -3276,81 +4278,154 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Triggers a training job for a project. </summary>
         /// <param name="waitUntil"> <see cref="WaitUntil.Completed"/> if the method should wait to return until the long-running operation has completed on the service; <see cref="WaitUntil.Started"/> if it should return after starting the operation. For more information on long-running operations, please see <see href="https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/core/Azure.Core/samples/LongRunningOperations.md"> Azure.Core Long-Running Operation samples</see>. </param>
         /// <param name="projectName"> The name of the project to use. </param>
-        /// <param name="content"> The content to send as the body of the request. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="content"> The content to send as the body of the request. Details of the request body schema are in the Remarks section below. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="content"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="Operation{T}"/> from the service that will contain a <see cref="BinaryData"/> object once the asynchronous operation on the service has completed. Details of the body schema for the operation's final value are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call TrainAsync with required parameters and request content, and how to parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var data = new {
+        ///     modelLabel = "<modelLabel>",
+        ///     trainingMode = "advanced",
+        /// };
+        /// 
+        /// var operation = await client.TrainAsync(WaitUntil.Completed, "<projectName>", RequestContent.Create(data));
+        /// 
+        /// BinaryData data = await operation.WaitForCompletionAsync();
+        /// JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("modelLabel").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingConfigVersion").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("percentComplete").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// ]]></code>
+        /// This sample shows how to call TrainAsync with all parameters and request content, and how to parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var data = new {
+        ///     modelLabel = "<modelLabel>",
+        ///     trainingConfigVersion = "<trainingConfigVersion>",
+        ///     trainingMode = "advanced",
+        ///     evaluationOptions = new {
+        ///         kind = "percentage",
+        ///         trainingSplitPercentage = 1234,
+        ///         testingSplitPercentage = 1234,
+        ///     },
+        /// };
+        /// 
+        /// var operation = await client.TrainAsync(WaitUntil.Completed, "<projectName>", RequestContent.Create(data));
+        /// 
+        /// BinaryData data = await operation.WaitForCompletionAsync();
+        /// JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("modelLabel").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingConfigVersion").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingMode").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("percentComplete").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("startDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("endDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("percentComplete").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("startDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("endDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("estimatedEndDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Request Body</c>:
+        /// Below is the JSON schema for the request and response payloads.
+        /// 
+        /// Request Body:
+        /// 
+        /// Schema for <c>TrainingJobOptions</c>:
         /// <code>{
-        ///   modelLabel: string (required),
-        ///   trainingConfigVersion: string,
-        ///   trainingMode: &quot;advanced&quot; | &quot;standard&quot; (required),
+        ///   modelLabel: string, # Required. Represents the output model label.
+        ///   trainingConfigVersion: string, # Optional. Represents training config version. By default, &quot;latest&quot; value is used which uses the latest released training config version.
+        ///   trainingMode: &quot;advanced&quot; | &quot;standard&quot;, # Required. Represents the mode of the training operation.
         ///   evaluationOptions: {
-        ///     kind: &quot;percentage&quot; | &quot;manual&quot;,
-        ///     trainingSplitPercentage: number,
-        ///     testingSplitPercentage: number
-        ///   }
+        ///     kind: &quot;percentage&quot; | &quot;manual&quot;, # Optional. Represents the evaluation kind. By default, the evaluation kind is set to percentage.
+        ///     trainingSplitPercentage: number, # Optional. Represents the training dataset split percentage. Only needed in case the evaluation kind is percentage.
+        ///     testingSplitPercentage: number, # Optional. Represents the testing dataset split percentage. Only needed in case the evaluation kind is percentage.
+        ///   }, # Optional. Represents the evaluation options. By default, the evaluation kind is percentage, with training split percentage as 80, and testing split percentage as 20.
         /// }
         /// </code>
-        /// Schema for <c>Response Body</c>:
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>TrainingJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   result: {
+        ///     modelLabel: string, # Required. Represents trained model label.
+        ///     trainingConfigVersion: string, # Required. Represents training config version.
+        ///     trainingMode: &quot;advanced&quot; | &quot;standard&quot;, # Optional. Represents the mode of the training operation.
+        ///     trainingStatus: {
+        ///       percentComplete: number, # Required. Represents progress percentage.
+        ///       startDateTime: string (ISO 8601 Format), # Optional. Represents the start date time.
+        ///       endDateTime: string (ISO 8601 Format), # Optional. Represents the end date time.
+        ///       status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. Represents the status of the sub-operation.
+        ///     }, # Required. Represents the model training status.
+        ///     evaluationStatus: SubTrainingJobState, # Optional. Represents model evaluation status.
+        ///     estimatedEndDateTime: string (ISO 8601 Format), # Optional. Represents the estimated end date time for training and evaluation.
+        ///   }, # Required. Represents training tasks detailed result.
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ],
-        ///   result: {
-        ///     modelLabel: string,
-        ///     trainingConfigVersion: string,
-        ///     trainingMode: &quot;advanced&quot; | &quot;standard&quot;,
-        ///     trainingStatus: {
-        ///       percentComplete: number,
-        ///       startDateTime: string (ISO 8601 Format),
-        ///       endDateTime: string (ISO 8601 Format),
-        ///       status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;
-        ///     },
-        ///     evaluationStatus: SubTrainingJobState,
-        ///     estimatedEndDateTime: string (ISO 8601 Format)
-        ///   }
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -3377,81 +4452,154 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Triggers a training job for a project. </summary>
         /// <param name="waitUntil"> <see cref="WaitUntil.Completed"/> if the method should wait to return until the long-running operation has completed on the service; <see cref="WaitUntil.Started"/> if it should return after starting the operation. For more information on long-running operations, please see <see href="https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/core/Azure.Core/samples/LongRunningOperations.md"> Azure.Core Long-Running Operation samples</see>. </param>
         /// <param name="projectName"> The name of the project to use. </param>
-        /// <param name="content"> The content to send as the body of the request. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="content"> The content to send as the body of the request. Details of the request body schema are in the Remarks section below. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="content"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="Operation{T}"/> from the service that will contain a <see cref="BinaryData"/> object once the asynchronous operation on the service has completed. Details of the body schema for the operation's final value are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call Train with required parameters and request content, and how to parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var data = new {
+        ///     modelLabel = "<modelLabel>",
+        ///     trainingMode = "advanced",
+        /// };
+        /// 
+        /// var operation = client.Train(WaitUntil.Completed, "<projectName>", RequestContent.Create(data));
+        /// 
+        /// BinaryData data = operation.WaitForCompletion();
+        /// JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("modelLabel").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingConfigVersion").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("percentComplete").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// ]]></code>
+        /// This sample shows how to call Train with all parameters and request content, and how to parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var data = new {
+        ///     modelLabel = "<modelLabel>",
+        ///     trainingConfigVersion = "<trainingConfigVersion>",
+        ///     trainingMode = "advanced",
+        ///     evaluationOptions = new {
+        ///         kind = "percentage",
+        ///         trainingSplitPercentage = 1234,
+        ///         testingSplitPercentage = 1234,
+        ///     },
+        /// };
+        /// 
+        /// var operation = client.Train(WaitUntil.Completed, "<projectName>", RequestContent.Create(data));
+        /// 
+        /// BinaryData data = operation.WaitForCompletion();
+        /// JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("modelLabel").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingConfigVersion").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingMode").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("percentComplete").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("startDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("endDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("percentComplete").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("startDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("endDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("estimatedEndDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Request Body</c>:
+        /// Below is the JSON schema for the request and response payloads.
+        /// 
+        /// Request Body:
+        /// 
+        /// Schema for <c>TrainingJobOptions</c>:
         /// <code>{
-        ///   modelLabel: string (required),
-        ///   trainingConfigVersion: string,
-        ///   trainingMode: &quot;advanced&quot; | &quot;standard&quot; (required),
+        ///   modelLabel: string, # Required. Represents the output model label.
+        ///   trainingConfigVersion: string, # Optional. Represents training config version. By default, &quot;latest&quot; value is used which uses the latest released training config version.
+        ///   trainingMode: &quot;advanced&quot; | &quot;standard&quot;, # Required. Represents the mode of the training operation.
         ///   evaluationOptions: {
-        ///     kind: &quot;percentage&quot; | &quot;manual&quot;,
-        ///     trainingSplitPercentage: number,
-        ///     testingSplitPercentage: number
-        ///   }
+        ///     kind: &quot;percentage&quot; | &quot;manual&quot;, # Optional. Represents the evaluation kind. By default, the evaluation kind is set to percentage.
+        ///     trainingSplitPercentage: number, # Optional. Represents the training dataset split percentage. Only needed in case the evaluation kind is percentage.
+        ///     testingSplitPercentage: number, # Optional. Represents the testing dataset split percentage. Only needed in case the evaluation kind is percentage.
+        ///   }, # Optional. Represents the evaluation options. By default, the evaluation kind is percentage, with training split percentage as 80, and testing split percentage as 20.
         /// }
         /// </code>
-        /// Schema for <c>Response Body</c>:
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>TrainingJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   result: {
+        ///     modelLabel: string, # Required. Represents trained model label.
+        ///     trainingConfigVersion: string, # Required. Represents training config version.
+        ///     trainingMode: &quot;advanced&quot; | &quot;standard&quot;, # Optional. Represents the mode of the training operation.
+        ///     trainingStatus: {
+        ///       percentComplete: number, # Required. Represents progress percentage.
+        ///       startDateTime: string (ISO 8601 Format), # Optional. Represents the start date time.
+        ///       endDateTime: string (ISO 8601 Format), # Optional. Represents the end date time.
+        ///       status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. Represents the status of the sub-operation.
+        ///     }, # Required. Represents the model training status.
+        ///     evaluationStatus: SubTrainingJobState, # Optional. Represents model evaluation status.
+        ///     estimatedEndDateTime: string (ISO 8601 Format), # Optional. Represents the estimated end date time for training and evaluation.
+        ///   }, # Required. Represents training tasks detailed result.
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ],
-        ///   result: {
-        ///     modelLabel: string,
-        ///     trainingConfigVersion: string,
-        ///     trainingMode: &quot;advanced&quot; | &quot;standard&quot;,
-        ///     trainingStatus: {
-        ///       percentComplete: number,
-        ///       startDateTime: string (ISO 8601 Format),
-        ///       endDateTime: string (ISO 8601 Format),
-        ///       status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;
-        ///     },
-        ///     evaluationStatus: SubTrainingJobState,
-        ///     estimatedEndDateTime: string (ISO 8601 Format)
-        ///   }
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -3478,62 +4626,93 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Swaps two existing deployments with each other. </summary>
         /// <param name="waitUntil"> <see cref="WaitUntil.Completed"/> if the method should wait to return until the long-running operation has completed on the service; <see cref="WaitUntil.Started"/> if it should return after starting the operation. For more information on long-running operations, please see <see href="https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/core/Azure.Core/samples/LongRunningOperations.md"> Azure.Core Long-Running Operation samples</see>. </param>
         /// <param name="projectName"> The name of the project to use. </param>
-        /// <param name="content"> The content to send as the body of the request. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="content"> The content to send as the body of the request. Details of the request body schema are in the Remarks section below. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="content"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="Operation{T}"/> from the service that will contain a <see cref="BinaryData"/> object once the asynchronous operation on the service has completed. Details of the body schema for the operation's final value are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call SwapDeploymentsAsync with required parameters and request content and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var data = new {
+        ///     firstDeploymentName = "<firstDeploymentName>",
+        ///     secondDeploymentName = "<secondDeploymentName>",
+        /// };
+        /// 
+        /// var operation = await client.SwapDeploymentsAsync(WaitUntil.Completed, "<projectName>", RequestContent.Create(data));
+        /// 
+        /// BinaryData data = await operation.WaitForCompletionAsync();
+        /// JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Request Body</c>:
+        /// Below is the JSON schema for the request and response payloads.
+        /// 
+        /// Request Body:
+        /// 
+        /// Schema for <c>SwapDeploymentsOptions</c>:
         /// <code>{
-        ///   firstDeploymentName: string (required),
-        ///   secondDeploymentName: string (required)
+        ///   firstDeploymentName: string, # Required. Represents the first deployment name.
+        ///   secondDeploymentName: string, # Required. Represents the second deployment name.
         /// }
         /// </code>
-        /// Schema for <c>Response Body</c>:
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>DeploymentJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ]
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -3560,62 +4739,93 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <summary> Swaps two existing deployments with each other. </summary>
         /// <param name="waitUntil"> <see cref="WaitUntil.Completed"/> if the method should wait to return until the long-running operation has completed on the service; <see cref="WaitUntil.Started"/> if it should return after starting the operation. For more information on long-running operations, please see <see href="https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/core/Azure.Core/samples/LongRunningOperations.md"> Azure.Core Long-Running Operation samples</see>. </param>
         /// <param name="projectName"> The name of the project to use. </param>
-        /// <param name="content"> The content to send as the body of the request. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="content"> The content to send as the body of the request. Details of the request body schema are in the Remarks section below. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="content"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="Operation{T}"/> from the service that will contain a <see cref="BinaryData"/> object once the asynchronous operation on the service has completed. Details of the body schema for the operation's final value are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call SwapDeployments with required parameters and request content and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var data = new {
+        ///     firstDeploymentName = "<firstDeploymentName>",
+        ///     secondDeploymentName = "<secondDeploymentName>",
+        /// };
+        /// 
+        /// var operation = client.SwapDeployments(WaitUntil.Completed, "<projectName>", RequestContent.Create(data));
+        /// 
+        /// BinaryData data = operation.WaitForCompletion();
+        /// JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Request Body</c>:
+        /// Below is the JSON schema for the request and response payloads.
+        /// 
+        /// Request Body:
+        /// 
+        /// Schema for <c>SwapDeploymentsOptions</c>:
         /// <code>{
-        ///   firstDeploymentName: string (required),
-        ///   secondDeploymentName: string (required)
+        ///   firstDeploymentName: string, # Required. Represents the first deployment name.
+        ///   secondDeploymentName: string, # Required. Represents the second deployment name.
         /// }
         /// </code>
-        /// Schema for <c>Response Body</c>:
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>DeploymentJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ]
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -3643,41 +4853,56 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <param name="waitUntil"> <see cref="WaitUntil.Completed"/> if the method should wait to return until the long-running operation has completed on the service; <see cref="WaitUntil.Started"/> if it should return after starting the operation. For more information on long-running operations, please see <see href="https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/core/Azure.Core/samples/LongRunningOperations.md"> Azure.Core Long-Running Operation samples</see>. </param>
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="deploymentName"> The name of the specific deployment of the project to use. </param>
-        /// <param name="content"> The content to send as the body of the request. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="content"> The content to send as the body of the request. Details of the request body schema are in the Remarks section below. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/>, <paramref name="deploymentName"/> or <paramref name="content"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> or <paramref name="deploymentName"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="Operation{T}"/> from the service that will contain a <see cref="BinaryData"/> object once the asynchronous operation on the service has completed. Details of the body schema for the operation's final value are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call DeployProjectAsync with required parameters and request content and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var data = new {
+        ///     trainedModelLabel = "<trainedModelLabel>",
+        /// };
+        /// 
+        /// var operation = await client.DeployProjectAsync(WaitUntil.Completed, "<projectName>", "<deploymentName>", RequestContent.Create(data));
+        /// 
+        /// BinaryData data = await operation.WaitForCompletionAsync();
+        /// JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        /// Console.WriteLine(result.GetProperty("deploymentName").ToString());
+        /// Console.WriteLine(result.GetProperty("modelId").ToString());
+        /// Console.WriteLine(result.GetProperty("lastTrainedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastDeployedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("deploymentExpirationDate").ToString());
+        /// Console.WriteLine(result.GetProperty("modelTrainingConfigVersion").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Request Body</c>:
+        /// Below is the JSON schema for the request and response payloads.
+        /// 
+        /// Request Body:
+        /// 
+        /// Schema for <c>CreateDeploymentOptions</c>:
         /// <code>{
-        ///   trainedModelLabel: string (required)
+        ///   trainedModelLabel: string, # Required. Represents the trained model label.
         /// }
         /// </code>
-        /// Schema for <c>Response Body</c>:
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ProjectDeployment</c>:
         /// <code>{
-        ///   deploymentName: string,
-        ///   modelId: string,
-        ///   lastTrainedDateTime: string (ISO 8601 Format),
-        ///   lastDeployedDateTime: string (ISO 8601 Format),
-        ///   deploymentExpirationDate: ConversationalAnalysisAuthoringProjectDeploymentExpirationDate,
-        ///   modelTrainingConfigVersion: string
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   deploymentName: string, # Required. Represents deployment name.
+        ///   modelId: string, # Required. Represents deployment modelId.
+        ///   lastTrainedDateTime: string (ISO 8601 Format), # Required. Represents deployment last trained time.
+        ///   lastDeployedDateTime: string (ISO 8601 Format), # Required. Represents deployment last deployed time.
+        ///   deploymentExpirationDate: string (date), # Required. Represents deployment expiration date in the runtime.
+        ///   modelTrainingConfigVersion: string, # Required. Represents model training config version.
         /// }
         /// </code>
         /// 
@@ -3706,41 +4931,56 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <param name="waitUntil"> <see cref="WaitUntil.Completed"/> if the method should wait to return until the long-running operation has completed on the service; <see cref="WaitUntil.Started"/> if it should return after starting the operation. For more information on long-running operations, please see <see href="https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/core/Azure.Core/samples/LongRunningOperations.md"> Azure.Core Long-Running Operation samples</see>. </param>
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="deploymentName"> The name of the specific deployment of the project to use. </param>
-        /// <param name="content"> The content to send as the body of the request. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="content"> The content to send as the body of the request. Details of the request body schema are in the Remarks section below. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/>, <paramref name="deploymentName"/> or <paramref name="content"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> or <paramref name="deploymentName"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="Operation{T}"/> from the service that will contain a <see cref="BinaryData"/> object once the asynchronous operation on the service has completed. Details of the body schema for the operation's final value are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call DeployProject with required parameters and request content and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var data = new {
+        ///     trainedModelLabel = "<trainedModelLabel>",
+        /// };
+        /// 
+        /// var operation = client.DeployProject(WaitUntil.Completed, "<projectName>", "<deploymentName>", RequestContent.Create(data));
+        /// 
+        /// BinaryData data = operation.WaitForCompletion();
+        /// JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        /// Console.WriteLine(result.GetProperty("deploymentName").ToString());
+        /// Console.WriteLine(result.GetProperty("modelId").ToString());
+        /// Console.WriteLine(result.GetProperty("lastTrainedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastDeployedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("deploymentExpirationDate").ToString());
+        /// Console.WriteLine(result.GetProperty("modelTrainingConfigVersion").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Request Body</c>:
+        /// Below is the JSON schema for the request and response payloads.
+        /// 
+        /// Request Body:
+        /// 
+        /// Schema for <c>CreateDeploymentOptions</c>:
         /// <code>{
-        ///   trainedModelLabel: string (required)
+        ///   trainedModelLabel: string, # Required. Represents the trained model label.
         /// }
         /// </code>
-        /// Schema for <c>Response Body</c>:
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>ProjectDeployment</c>:
         /// <code>{
-        ///   deploymentName: string,
-        ///   modelId: string,
-        ///   lastTrainedDateTime: string (ISO 8601 Format),
-        ///   lastDeployedDateTime: string (ISO 8601 Format),
-        ///   deploymentExpirationDate: ConversationalAnalysisAuthoringProjectDeploymentExpirationDate,
-        ///   modelTrainingConfigVersion: string
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   deploymentName: string, # Required. Represents deployment name.
+        ///   modelId: string, # Required. Represents deployment modelId.
+        ///   lastTrainedDateTime: string (ISO 8601 Format), # Required. Represents deployment last trained time.
+        ///   lastDeployedDateTime: string (ISO 8601 Format), # Required. Represents deployment last deployed time.
+        ///   deploymentExpirationDate: string (date), # Required. Represents deployment expiration date in the runtime.
+        ///   modelTrainingConfigVersion: string, # Required. Represents model training config version.
         /// }
         /// </code>
         /// 
@@ -3769,55 +5009,78 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <param name="waitUntil"> <see cref="WaitUntil.Completed"/> if the method should wait to return until the long-running operation has completed on the service; <see cref="WaitUntil.Started"/> if it should return after starting the operation. For more information on long-running operations, please see <see href="https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/core/Azure.Core/samples/LongRunningOperations.md"> Azure.Core Long-Running Operation samples</see>. </param>
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="deploymentName"> The name of the specific deployment of the project to use. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="deploymentName"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> or <paramref name="deploymentName"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="Operation{T}"/> from the service that will contain a <see cref="BinaryData"/> object once the asynchronous operation on the service has completed. Details of the body schema for the operation's final value are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call DeleteDeploymentAsync with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var operation = await client.DeleteDeploymentAsync(WaitUntil.Completed, "<projectName>", "<deploymentName>");
+        /// 
+        /// BinaryData data = await operation.WaitForCompletionAsync();
+        /// JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>DeploymentJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ]
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -3845,55 +5108,78 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <param name="waitUntil"> <see cref="WaitUntil.Completed"/> if the method should wait to return until the long-running operation has completed on the service; <see cref="WaitUntil.Started"/> if it should return after starting the operation. For more information on long-running operations, please see <see href="https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/core/Azure.Core/samples/LongRunningOperations.md"> Azure.Core Long-Running Operation samples</see>. </param>
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="deploymentName"> The name of the specific deployment of the project to use. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="deploymentName"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> or <paramref name="deploymentName"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="Operation{T}"/> from the service that will contain a <see cref="BinaryData"/> object once the asynchronous operation on the service has completed. Details of the body schema for the operation's final value are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call DeleteDeployment with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var operation = client.DeleteDeployment(WaitUntil.Completed, "<projectName>", "<deploymentName>");
+        /// 
+        /// BinaryData data = operation.WaitForCompletion();
+        /// JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>DeploymentJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ]
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -3921,68 +5207,103 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <param name="waitUntil"> <see cref="WaitUntil.Completed"/> if the method should wait to return until the long-running operation has completed on the service; <see cref="WaitUntil.Started"/> if it should return after starting the operation. For more information on long-running operations, please see <see href="https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/core/Azure.Core/samples/LongRunningOperations.md"> Azure.Core Long-Running Operation samples</see>. </param>
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="jobId"> The job ID. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="jobId"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> or <paramref name="jobId"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="Operation{T}"/> from the service that will contain a <see cref="BinaryData"/> object once the asynchronous operation on the service has completed. Details of the body schema for the operation's final value are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call CancelTrainingJobAsync with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var operation = await client.CancelTrainingJobAsync(WaitUntil.Completed, "<projectName>", "<jobId>");
+        /// 
+        /// BinaryData data = await operation.WaitForCompletionAsync();
+        /// JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("modelLabel").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingConfigVersion").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingMode").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("percentComplete").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("startDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("endDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("percentComplete").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("startDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("endDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("estimatedEndDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>TrainingJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   result: {
+        ///     modelLabel: string, # Required. Represents trained model label.
+        ///     trainingConfigVersion: string, # Required. Represents training config version.
+        ///     trainingMode: &quot;advanced&quot; | &quot;standard&quot;, # Optional. Represents the mode of the training operation.
+        ///     trainingStatus: {
+        ///       percentComplete: number, # Required. Represents progress percentage.
+        ///       startDateTime: string (ISO 8601 Format), # Optional. Represents the start date time.
+        ///       endDateTime: string (ISO 8601 Format), # Optional. Represents the end date time.
+        ///       status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. Represents the status of the sub-operation.
+        ///     }, # Required. Represents the model training status.
+        ///     evaluationStatus: SubTrainingJobState, # Optional. Represents model evaluation status.
+        ///     estimatedEndDateTime: string (ISO 8601 Format), # Optional. Represents the estimated end date time for training and evaluation.
+        ///   }, # Required. Represents training tasks detailed result.
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ],
-        ///   result: {
-        ///     modelLabel: string,
-        ///     trainingConfigVersion: string,
-        ///     trainingMode: &quot;advanced&quot; | &quot;standard&quot;,
-        ///     trainingStatus: {
-        ///       percentComplete: number,
-        ///       startDateTime: string (ISO 8601 Format),
-        ///       endDateTime: string (ISO 8601 Format),
-        ///       status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;
-        ///     },
-        ///     evaluationStatus: SubTrainingJobState,
-        ///     estimatedEndDateTime: string (ISO 8601 Format)
-        ///   }
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 
@@ -4010,68 +5331,103 @@ namespace Azure.AI.Language.Conversations.Authoring
         /// <param name="waitUntil"> <see cref="WaitUntil.Completed"/> if the method should wait to return until the long-running operation has completed on the service; <see cref="WaitUntil.Started"/> if it should return after starting the operation. For more information on long-running operations, please see <see href="https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/core/Azure.Core/samples/LongRunningOperations.md"> Azure.Core Long-Running Operation samples</see>. </param>
         /// <param name="projectName"> The name of the project to use. </param>
         /// <param name="jobId"> The job ID. </param>
-        /// <param name="context"> The request context, which can override default behaviors on the request on a per-call basis. </param>
+        /// <param name="context"> The request context, which can override default behaviors of the client pipeline on a per-call basis. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="projectName"/> or <paramref name="jobId"/> is null. </exception>
         /// <exception cref="ArgumentException"> <paramref name="projectName"/> or <paramref name="jobId"/> is an empty string, and was expected to be non-empty. </exception>
+        /// <exception cref="RequestFailedException"> Service returned a non-success status code. </exception>
+        /// <returns> The <see cref="Operation{T}"/> from the service that will contain a <see cref="BinaryData"/> object once the asynchronous operation on the service has completed. Details of the body schema for the operation's final value are in the Remarks section below. </returns>
+        /// <example>
+        /// This sample shows how to call CancelTrainingJob with required parameters and parse the result.
+        /// <code><![CDATA[
+        /// var credential = new AzureKeyCredential("<key>");
+        /// var endpoint = new Uri("<https://my-service.azure.com>");
+        /// var client = new ConversationAuthoringClient(endpoint, credential);
+        /// 
+        /// var operation = client.CancelTrainingJob(WaitUntil.Completed, "<projectName>", "<jobId>");
+        /// 
+        /// BinaryData data = operation.WaitForCompletion();
+        /// JsonElement result = JsonDocument.Parse(data.ToStream()).RootElement;
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("modelLabel").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingConfigVersion").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingMode").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("percentComplete").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("startDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("endDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("trainingStatus").GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("percentComplete").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("startDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("endDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("evaluationStatus").GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("result").GetProperty("estimatedEndDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("jobId").ToString());
+        /// Console.WriteLine(result.GetProperty("createdDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("lastUpdatedDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("expirationDateTime").ToString());
+        /// Console.WriteLine(result.GetProperty("status").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("warnings")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("details")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("code").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("message").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("details").GetProperty("<test>").ToString());
+        /// Console.WriteLine(result.GetProperty("errors")[0].GetProperty("innererror").GetProperty("target").ToString());
+        /// ]]></code>
+        /// </example>
         /// <remarks>
-        /// Schema for <c>Response Body</c>:
+        /// Below is the JSON schema for the response payload.
+        /// 
+        /// Response Body:
+        /// 
+        /// Schema for <c>TrainingJobState</c>:
         /// <code>{
-        ///   jobId: string,
-        ///   createdDateTime: string (ISO 8601 Format),
-        ///   lastUpdatedDateTime: string (ISO 8601 Format),
-        ///   expirationDateTime: string (ISO 8601 Format),
-        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;,
+        ///   result: {
+        ///     modelLabel: string, # Required. Represents trained model label.
+        ///     trainingConfigVersion: string, # Required. Represents training config version.
+        ///     trainingMode: &quot;advanced&quot; | &quot;standard&quot;, # Optional. Represents the mode of the training operation.
+        ///     trainingStatus: {
+        ///       percentComplete: number, # Required. Represents progress percentage.
+        ///       startDateTime: string (ISO 8601 Format), # Optional. Represents the start date time.
+        ///       endDateTime: string (ISO 8601 Format), # Optional. Represents the end date time.
+        ///       status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. Represents the status of the sub-operation.
+        ///     }, # Required. Represents the model training status.
+        ///     evaluationStatus: SubTrainingJobState, # Optional. Represents model evaluation status.
+        ///     estimatedEndDateTime: string (ISO 8601 Format), # Optional. Represents the estimated end date time for training and evaluation.
+        ///   }, # Required. Represents training tasks detailed result.
+        ///   jobId: string, # Required. The job ID.
+        ///   createdDateTime: string (ISO 8601 Format), # Required. The creation date time of the job.
+        ///   lastUpdatedDateTime: string (ISO 8601 Format), # Required. The last date time the job was updated.
+        ///   expirationDateTime: string (ISO 8601 Format), # Optional. The expiration date time of the job.
+        ///   status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;, # Required. The job status.
         ///   warnings: [
         ///     {
-        ///       code: string,
-        ///       message: string
+        ///       code: string, # Required. The warning code.
+        ///       message: string, # Required. The warning message.
         ///     }
-        ///   ],
+        ///   ], # Optional. The warnings that were encountered while executing the job.
         ///   errors: [
         ///     {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///       message: string,
-        ///       target: string,
-        ///       details: [Error],
+        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;, # Required. One of a server-defined set of error codes.
+        ///       message: string, # Required. A human-readable representation of the error.
+        ///       target: string, # Optional. The target of the error.
+        ///       details: [Error], # Optional. An array of details about specific errors that led to this reported error.
         ///       innererror: {
-        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///         message: string,
-        ///         details: Dictionary&lt;string, string&gt;,
-        ///         target: string,
-        ///         innererror: InnerErrorModel
-        ///       }
+        ///         code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;, # Required. One of a server-defined set of error codes.
+        ///         message: string, # Required. Error message.
+        ///         details: Dictionary&lt;string, string&gt;, # Optional. Error details.
+        ///         target: string, # Optional. Error target.
+        ///         innererror: InnerErrorModel, # Optional. An object containing more specific information than the current object about the error.
+        ///       }, # Optional. An object containing more specific information than the current object about the error.
         ///     }
-        ///   ],
-        ///   result: {
-        ///     modelLabel: string,
-        ///     trainingConfigVersion: string,
-        ///     trainingMode: &quot;advanced&quot; | &quot;standard&quot;,
-        ///     trainingStatus: {
-        ///       percentComplete: number,
-        ///       startDateTime: string (ISO 8601 Format),
-        ///       endDateTime: string (ISO 8601 Format),
-        ///       status: &quot;notStarted&quot; | &quot;running&quot; | &quot;succeeded&quot; | &quot;failed&quot; | &quot;cancelled&quot; | &quot;cancelling&quot; | &quot;partiallyCompleted&quot;
-        ///     },
-        ///     evaluationStatus: SubTrainingJobState,
-        ///     estimatedEndDateTime: string (ISO 8601 Format)
-        ///   }
-        /// }
-        /// </code>
-        /// Schema for <c>Response Error</c>:
-        /// <code>{
-        ///   error: {
-        ///     code: &quot;InvalidRequest&quot; | &quot;InvalidArgument&quot; | &quot;Unauthorized&quot; | &quot;Forbidden&quot; | &quot;NotFound&quot; | &quot;ProjectNotFound&quot; | &quot;OperationNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchIndexNotFound&quot; | &quot;TooManyRequests&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;AzureCognitiveSearchIndexLimitReached&quot; | &quot;InternalServerError&quot; | &quot;ServiceUnavailable&quot; | &quot;Timeout&quot; | &quot;QuotaExceeded&quot; | &quot;Conflict&quot; | &quot;Warning&quot;,
-        ///     message: string,
-        ///     target: string,
-        ///     details: [Error],
-        ///     innererror: {
-        ///       code: &quot;InvalidRequest&quot; | &quot;InvalidParameterValue&quot; | &quot;KnowledgeBaseNotFound&quot; | &quot;AzureCognitiveSearchNotFound&quot; | &quot;AzureCognitiveSearchThrottling&quot; | &quot;ExtractionFailure&quot; | &quot;InvalidRequestBodyFormat&quot; | &quot;EmptyRequest&quot; | &quot;MissingInputDocuments&quot; | &quot;InvalidDocument&quot; | &quot;ModelVersionIncorrect&quot; | &quot;InvalidDocumentBatch&quot; | &quot;UnsupportedLanguageCode&quot; | &quot;InvalidCountryHint&quot;,
-        ///       message: string,
-        ///       details: Dictionary&lt;string, string&gt;,
-        ///       target: string,
-        ///       innererror: InnerErrorModel
-        ///     }
-        ///   }
+        ///   ], # Optional. The errors encountered while executing the job.
         /// }
         /// </code>
         /// 

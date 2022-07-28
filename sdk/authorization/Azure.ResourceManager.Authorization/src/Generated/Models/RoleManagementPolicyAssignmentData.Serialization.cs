@@ -44,10 +44,10 @@ namespace Azure.ResourceManager.Authorization
             ResourceIdentifier id = default;
             string name = default;
             ResourceType type = default;
-            SystemData systemData = default;
+            Optional<SystemData> systemData = default;
             Optional<string> scope = default;
-            Optional<string> roleDefinitionId = default;
-            Optional<string> policyId = default;
+            Optional<ResourceIdentifier> roleDefinitionId = default;
+            Optional<ResourceIdentifier> policyId = default;
             Optional<IReadOnlyList<RoleManagementPolicyRule>> effectiveRules = default;
             Optional<PolicyAssignmentProperties> policyAssignmentProperties = default;
             foreach (var property in element.EnumerateObject())
@@ -69,6 +69,11 @@ namespace Azure.ResourceManager.Authorization
                 }
                 if (property.NameEquals("systemData"))
                 {
+                    if (property.Value.ValueKind == JsonValueKind.Null)
+                    {
+                        property.ThrowNonNullablePropertyIsNull();
+                        continue;
+                    }
                     systemData = JsonSerializer.Deserialize<SystemData>(property.Value.ToString());
                     continue;
                 }
@@ -88,12 +93,22 @@ namespace Azure.ResourceManager.Authorization
                         }
                         if (property0.NameEquals("roleDefinitionId"))
                         {
-                            roleDefinitionId = property0.Value.GetString();
+                            if (property0.Value.ValueKind == JsonValueKind.Null)
+                            {
+                                property0.ThrowNonNullablePropertyIsNull();
+                                continue;
+                            }
+                            roleDefinitionId = new ResourceIdentifier(property0.Value.GetString());
                             continue;
                         }
                         if (property0.NameEquals("policyId"))
                         {
-                            policyId = property0.Value.GetString();
+                            if (property0.Value.ValueKind == JsonValueKind.Null)
+                            {
+                                property0.ThrowNonNullablePropertyIsNull();
+                                continue;
+                            }
+                            policyId = new ResourceIdentifier(property0.Value.GetString());
                             continue;
                         }
                         if (property0.NameEquals("effectiveRules"))
@@ -125,7 +140,7 @@ namespace Azure.ResourceManager.Authorization
                     continue;
                 }
             }
-            return new RoleManagementPolicyAssignmentData(id, name, type, systemData, scope.Value, roleDefinitionId.Value, policyId.Value, Optional.ToList(effectiveRules), policyAssignmentProperties.Value);
+            return new RoleManagementPolicyAssignmentData(id, name, type, systemData.Value, scope.Value, roleDefinitionId.Value, policyId.Value, Optional.ToList(effectiveRules), policyAssignmentProperties.Value);
         }
     }
 }

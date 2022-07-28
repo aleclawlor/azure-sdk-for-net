@@ -13,7 +13,7 @@ using Azure.ResourceManager.Models;
 
 namespace Azure.ResourceManager.AppService.Models
 {
-    public partial class MsDeploy : IUtf8JsonSerializable
+    public partial class MSDeploy : IUtf8JsonSerializable
     {
         void IUtf8JsonSerializable.Write(Utf8JsonWriter writer)
         {
@@ -61,22 +61,22 @@ namespace Azure.ResourceManager.AppService.Models
                 writer.WritePropertyName("skipAppData");
                 writer.WriteBooleanValue(SkipAppData.Value);
             }
-            if (Optional.IsDefined(AppOffline))
+            if (Optional.IsDefined(IsAppOffline))
             {
                 writer.WritePropertyName("appOffline");
-                writer.WriteBooleanValue(AppOffline.Value);
+                writer.WriteBooleanValue(IsAppOffline.Value);
             }
             writer.WriteEndObject();
             writer.WriteEndObject();
         }
 
-        internal static MsDeploy DeserializeMsDeploy(JsonElement element)
+        internal static MSDeploy DeserializeMSDeploy(JsonElement element)
         {
             Optional<string> kind = default;
             ResourceIdentifier id = default;
             string name = default;
             ResourceType type = default;
-            SystemData systemData = default;
+            Optional<SystemData> systemData = default;
             Optional<Uri> packageUri = default;
             Optional<string> connectionString = default;
             Optional<string> dbType = default;
@@ -108,6 +108,11 @@ namespace Azure.ResourceManager.AppService.Models
                 }
                 if (property.NameEquals("systemData"))
                 {
+                    if (property.Value.ValueKind == JsonValueKind.Null)
+                    {
+                        property.ThrowNonNullablePropertyIsNull();
+                        continue;
+                    }
                     systemData = JsonSerializer.Deserialize<SystemData>(property.Value.ToString());
                     continue;
                 }
@@ -189,7 +194,7 @@ namespace Azure.ResourceManager.AppService.Models
                     continue;
                 }
             }
-            return new MsDeploy(id, name, type, systemData, kind.Value, packageUri.Value, connectionString.Value, dbType.Value, setParametersXmlFileUri.Value, Optional.ToDictionary(setParameters), Optional.ToNullable(skipAppData), Optional.ToNullable(appOffline));
+            return new MSDeploy(id, name, type, systemData.Value, packageUri.Value, connectionString.Value, dbType.Value, setParametersXmlFileUri.Value, Optional.ToDictionary(setParameters), Optional.ToNullable(skipAppData), Optional.ToNullable(appOffline), kind.Value);
         }
     }
 }

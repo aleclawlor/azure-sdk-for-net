@@ -47,18 +47,18 @@ namespace Azure.ResourceManager.Reservations
         /// <param name="providerId"> Azure resource provider ID. </param>
         /// <param name="location"> Azure region. </param>
         /// <returns> An object representing collection of CurrentQuotaLimitBaseResources and their operations over a CurrentQuotaLimitBaseResource. </returns>
-        public virtual CurrentQuotaLimitBaseCollection GetCurrentQuotaLimitBases(string providerId, string location)
+        public virtual CurrentQuotaLimitBaseCollection GetCurrentQuotaLimitBases(string providerId, AzureLocation location)
         {
             return new CurrentQuotaLimitBaseCollection(Client, Id, providerId, location);
         }
 
-        /// <summary> Gets a collection of QuotaRequestDetailsResources in the SubscriptionResource. </summary>
+        /// <summary> Gets a collection of QuotaRequestDetailResources in the SubscriptionResource. </summary>
         /// <param name="providerId"> Azure resource provider ID. </param>
         /// <param name="location"> Azure region. </param>
-        /// <returns> An object representing collection of QuotaRequestDetailsResources and their operations over a QuotaRequestDetailsResource. </returns>
-        public virtual QuotaRequestDetailsCollection GetQuotaRequestDetails(string providerId, string location)
+        /// <returns> An object representing collection of QuotaRequestDetailResources and their operations over a QuotaRequestDetailResource. </returns>
+        public virtual QuotaRequestDetailCollection GetQuotaRequestDetails(string providerId, AzureLocation location)
         {
-            return new QuotaRequestDetailsCollection(Client, Id, providerId, location);
+            return new QuotaRequestDetailCollection(Client, Id, providerId, location);
         }
 
         /// <summary>
@@ -73,7 +73,7 @@ namespace Azure.ResourceManager.Reservations
         /// <param name="planId"> Plan id used to get the third party products. </param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
         /// <returns> An async collection of <see cref="ReservationCatalog" /> that may take multiple service requests to iterate over. </returns>
-        public virtual AsyncPageable<ReservationCatalog> GetCatalogAsync(string reservedResourceType = null, string location = null, string publisherId = null, string offerId = null, string planId = null, CancellationToken cancellationToken = default)
+        public virtual AsyncPageable<ReservationCatalog> GetCatalogAsync(string reservedResourceType = null, AzureLocation? location = null, string publisherId = null, string offerId = null, string planId = null, CancellationToken cancellationToken = default)
         {
             async Task<Page<ReservationCatalog>> FirstPageFunc(int? pageSizeHint)
             {
@@ -105,7 +105,7 @@ namespace Azure.ResourceManager.Reservations
         /// <param name="planId"> Plan id used to get the third party products. </param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
         /// <returns> A collection of <see cref="ReservationCatalog" /> that may take multiple service requests to iterate over. </returns>
-        public virtual Pageable<ReservationCatalog> GetCatalog(string reservedResourceType = null, string location = null, string publisherId = null, string offerId = null, string planId = null, CancellationToken cancellationToken = default)
+        public virtual Pageable<ReservationCatalog> GetCatalog(string reservedResourceType = null, AzureLocation? location = null, string publisherId = null, string offerId = null, string planId = null, CancellationToken cancellationToken = default)
         {
             Page<ReservationCatalog> FirstPageFunc(int? pageSizeHint)
             {

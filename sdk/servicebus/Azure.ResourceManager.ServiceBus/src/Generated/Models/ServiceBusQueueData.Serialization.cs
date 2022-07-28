@@ -106,11 +106,11 @@ namespace Azure.ResourceManager.ServiceBus
 
         internal static ServiceBusQueueData DeserializeServiceBusQueueData(JsonElement element)
         {
-            Optional<string> location = default;
+            Optional<AzureLocation> location = default;
             ResourceIdentifier id = default;
             string name = default;
             ResourceType type = default;
-            SystemData systemData = default;
+            Optional<SystemData> systemData = default;
             Optional<MessageCountDetails> countDetails = default;
             Optional<DateTimeOffset> createdAt = default;
             Optional<DateTimeOffset> updatedAt = default;
@@ -126,7 +126,7 @@ namespace Azure.ResourceManager.ServiceBus
             Optional<bool> deadLetteringOnMessageExpiration = default;
             Optional<TimeSpan> duplicateDetectionHistoryTimeWindow = default;
             Optional<int> maxDeliveryCount = default;
-            Optional<EntityStatus> status = default;
+            Optional<ServiceBusMessagingEntityStatus> status = default;
             Optional<bool> enableBatchedOperations = default;
             Optional<TimeSpan> autoDeleteOnIdle = default;
             Optional<bool> enablePartitioning = default;
@@ -137,7 +137,12 @@ namespace Azure.ResourceManager.ServiceBus
             {
                 if (property.NameEquals("location"))
                 {
-                    location = property.Value.GetString();
+                    if (property.Value.ValueKind == JsonValueKind.Null)
+                    {
+                        property.ThrowNonNullablePropertyIsNull();
+                        continue;
+                    }
+                    location = new AzureLocation(property.Value.GetString());
                     continue;
                 }
                 if (property.NameEquals("id"))
@@ -157,6 +162,11 @@ namespace Azure.ResourceManager.ServiceBus
                 }
                 if (property.NameEquals("systemData"))
                 {
+                    if (property.Value.ValueKind == JsonValueKind.Null)
+                    {
+                        property.ThrowNonNullablePropertyIsNull();
+                        continue;
+                    }
                     systemData = JsonSerializer.Deserialize<SystemData>(property.Value.ToString());
                     continue;
                 }
@@ -326,7 +336,7 @@ namespace Azure.ResourceManager.ServiceBus
                                 property0.ThrowNonNullablePropertyIsNull();
                                 continue;
                             }
-                            status = property0.Value.GetString().ToEntityStatus();
+                            status = property0.Value.GetString().ToServiceBusMessagingEntityStatus();
                             continue;
                         }
                         if (property0.NameEquals("enableBatchedOperations"))
@@ -383,7 +393,7 @@ namespace Azure.ResourceManager.ServiceBus
                     continue;
                 }
             }
-            return new ServiceBusQueueData(id, name, type, systemData, location.Value, countDetails.Value, Optional.ToNullable(createdAt), Optional.ToNullable(updatedAt), Optional.ToNullable(accessedAt), Optional.ToNullable(sizeInBytes), Optional.ToNullable(messageCount), Optional.ToNullable(lockDuration), Optional.ToNullable(maxSizeInMegabytes), Optional.ToNullable(maxMessageSizeInKilobytes), Optional.ToNullable(requiresDuplicateDetection), Optional.ToNullable(requiresSession), Optional.ToNullable(defaultMessageTimeToLive), Optional.ToNullable(deadLetteringOnMessageExpiration), Optional.ToNullable(duplicateDetectionHistoryTimeWindow), Optional.ToNullable(maxDeliveryCount), Optional.ToNullable(status), Optional.ToNullable(enableBatchedOperations), Optional.ToNullable(autoDeleteOnIdle), Optional.ToNullable(enablePartitioning), Optional.ToNullable(enableExpress), forwardTo.Value, forwardDeadLetteredMessagesTo.Value);
+            return new ServiceBusQueueData(id, name, type, systemData.Value, countDetails.Value, Optional.ToNullable(createdAt), Optional.ToNullable(updatedAt), Optional.ToNullable(accessedAt), Optional.ToNullable(sizeInBytes), Optional.ToNullable(messageCount), Optional.ToNullable(lockDuration), Optional.ToNullable(maxSizeInMegabytes), Optional.ToNullable(maxMessageSizeInKilobytes), Optional.ToNullable(requiresDuplicateDetection), Optional.ToNullable(requiresSession), Optional.ToNullable(defaultMessageTimeToLive), Optional.ToNullable(deadLetteringOnMessageExpiration), Optional.ToNullable(duplicateDetectionHistoryTimeWindow), Optional.ToNullable(maxDeliveryCount), Optional.ToNullable(status), Optional.ToNullable(enableBatchedOperations), Optional.ToNullable(autoDeleteOnIdle), Optional.ToNullable(enablePartitioning), Optional.ToNullable(enableExpress), forwardTo.Value, forwardDeadLetteredMessagesTo.Value, Optional.ToNullable(location));
         }
     }
 }

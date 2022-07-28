@@ -12,7 +12,7 @@ using Azure.ResourceManager.Models;
 
 namespace Azure.ResourceManager.AppService.Models
 {
-    public partial class MsDeployLog : IUtf8JsonSerializable
+    public partial class MSDeployLog : IUtf8JsonSerializable
     {
         void IUtf8JsonSerializable.Write(Utf8JsonWriter writer)
         {
@@ -28,14 +28,14 @@ namespace Azure.ResourceManager.AppService.Models
             writer.WriteEndObject();
         }
 
-        internal static MsDeployLog DeserializeMsDeployLog(JsonElement element)
+        internal static MSDeployLog DeserializeMSDeployLog(JsonElement element)
         {
             Optional<string> kind = default;
             ResourceIdentifier id = default;
             string name = default;
             ResourceType type = default;
-            SystemData systemData = default;
-            Optional<IReadOnlyList<MsDeployLogEntry>> entries = default;
+            Optional<SystemData> systemData = default;
+            Optional<IReadOnlyList<MSDeployLogEntry>> entries = default;
             foreach (var property in element.EnumerateObject())
             {
                 if (property.NameEquals("kind"))
@@ -60,6 +60,11 @@ namespace Azure.ResourceManager.AppService.Models
                 }
                 if (property.NameEquals("systemData"))
                 {
+                    if (property.Value.ValueKind == JsonValueKind.Null)
+                    {
+                        property.ThrowNonNullablePropertyIsNull();
+                        continue;
+                    }
                     systemData = JsonSerializer.Deserialize<SystemData>(property.Value.ToString());
                     continue;
                 }
@@ -79,10 +84,10 @@ namespace Azure.ResourceManager.AppService.Models
                                 property0.ThrowNonNullablePropertyIsNull();
                                 continue;
                             }
-                            List<MsDeployLogEntry> array = new List<MsDeployLogEntry>();
+                            List<MSDeployLogEntry> array = new List<MSDeployLogEntry>();
                             foreach (var item in property0.Value.EnumerateArray())
                             {
-                                array.Add(MsDeployLogEntry.DeserializeMsDeployLogEntry(item));
+                                array.Add(MSDeployLogEntry.DeserializeMSDeployLogEntry(item));
                             }
                             entries = array;
                             continue;
@@ -91,7 +96,7 @@ namespace Azure.ResourceManager.AppService.Models
                     continue;
                 }
             }
-            return new MsDeployLog(id, name, type, systemData, kind.Value, Optional.ToList(entries));
+            return new MSDeployLog(id, name, type, systemData.Value, Optional.ToList(entries), kind.Value);
         }
     }
 }

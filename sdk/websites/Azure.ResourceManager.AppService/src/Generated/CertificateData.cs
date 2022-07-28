@@ -14,7 +14,7 @@ using Azure.ResourceManager.Models;
 namespace Azure.ResourceManager.AppService
 {
     /// <summary> A class representing the Certificate data model. </summary>
-    public partial class CertificateData : AppServiceResource
+    public partial class CertificateData : TrackedResourceData
     {
         /// <summary> Initializes a new instance of CertificateData. </summary>
         /// <param name="location"> The location. </param>
@@ -30,7 +30,6 @@ namespace Azure.ResourceManager.AppService
         /// <param name="systemData"> The systemData. </param>
         /// <param name="tags"> The tags. </param>
         /// <param name="location"> The location. </param>
-        /// <param name="kind"> Kind of resource. </param>
         /// <param name="password"> Certificate password. </param>
         /// <param name="friendlyName"> Friendly name of the certificate. </param>
         /// <param name="subjectName"> Subject name of the certificate. </param>
@@ -40,9 +39,9 @@ namespace Azure.ResourceManager.AppService
         /// <param name="selfLink"> Self link. </param>
         /// <param name="issuer"> Certificate issuer. </param>
         /// <param name="issueOn"> Certificate issue Date. </param>
-        /// <param name="expirationOn"> Certificate expiration date. </param>
+        /// <param name="expireOn"> Certificate expiration date. </param>
         /// <param name="thumbprint"> Certificate thumbprint. </param>
-        /// <param name="valid"> Is the certificate valid?. </param>
+        /// <param name="isValid"> Is the certificate valid?. </param>
         /// <param name="cerBlob"> Raw bytes of .cer file. </param>
         /// <param name="publicKeyHash"> Public key hash. </param>
         /// <param name="hostingEnvironmentProfile"> Specification for the App Service Environment to use for the certificate. </param>
@@ -52,7 +51,8 @@ namespace Azure.ResourceManager.AppService
         /// <param name="serverFarmId"> Resource ID of the associated App Service plan, formatted as: &quot;/subscriptions/{subscriptionID}/resourceGroups/{groupName}/providers/Microsoft.Web/serverfarms/{appServicePlanName}&quot;. </param>
         /// <param name="canonicalName"> CNAME of the certificate to be issued via free certificate. </param>
         /// <param name="domainValidationMethod"> Method of domain validation for free cert. </param>
-        internal CertificateData(ResourceIdentifier id, string name, ResourceType resourceType, SystemData systemData, IDictionary<string, string> tags, AzureLocation location, string kind, string password, string friendlyName, string subjectName, IList<string> hostNames, byte[] pfxBlob, string siteName, string selfLink, string issuer, DateTimeOffset? issueOn, DateTimeOffset? expirationOn, string thumbprint, bool? valid, byte[] cerBlob, string publicKeyHash, HostingEnvironmentProfile hostingEnvironmentProfile, string keyVaultId, string keyVaultSecretName, KeyVaultSecretStatus? keyVaultSecretStatus, string serverFarmId, string canonicalName, string domainValidationMethod) : base(id, name, resourceType, systemData, tags, location, kind)
+        /// <param name="kind"> Kind of resource. </param>
+        internal CertificateData(ResourceIdentifier id, string name, ResourceType resourceType, SystemData systemData, IDictionary<string, string> tags, AzureLocation location, string password, string friendlyName, string subjectName, IList<string> hostNames, byte[] pfxBlob, string siteName, string selfLink, string issuer, DateTimeOffset? issueOn, DateTimeOffset? expireOn, string thumbprint, bool? isValid, byte[] cerBlob, string publicKeyHash, HostingEnvironmentProfile hostingEnvironmentProfile, ResourceIdentifier keyVaultId, string keyVaultSecretName, KeyVaultSecretStatus? keyVaultSecretStatus, ResourceIdentifier serverFarmId, string canonicalName, string domainValidationMethod, string kind) : base(id, name, resourceType, systemData, tags, location)
         {
             Password = password;
             FriendlyName = friendlyName;
@@ -63,9 +63,9 @@ namespace Azure.ResourceManager.AppService
             SelfLink = selfLink;
             Issuer = issuer;
             IssueOn = issueOn;
-            ExpirationOn = expirationOn;
+            ExpireOn = expireOn;
             Thumbprint = thumbprint;
-            Valid = valid;
+            IsValid = isValid;
             CerBlob = cerBlob;
             PublicKeyHash = publicKeyHash;
             HostingEnvironmentProfile = hostingEnvironmentProfile;
@@ -75,6 +75,7 @@ namespace Azure.ResourceManager.AppService
             ServerFarmId = serverFarmId;
             CanonicalName = canonicalName;
             DomainValidationMethod = domainValidationMethod;
+            Kind = kind;
         }
 
         /// <summary> Certificate password. </summary>
@@ -96,11 +97,11 @@ namespace Azure.ResourceManager.AppService
         /// <summary> Certificate issue Date. </summary>
         public DateTimeOffset? IssueOn { get; }
         /// <summary> Certificate expiration date. </summary>
-        public DateTimeOffset? ExpirationOn { get; }
+        public DateTimeOffset? ExpireOn { get; }
         /// <summary> Certificate thumbprint. </summary>
         public string Thumbprint { get; }
         /// <summary> Is the certificate valid?. </summary>
-        public bool? Valid { get; }
+        public bool? IsValid { get; }
         /// <summary> Raw bytes of .cer file. </summary>
         public byte[] CerBlob { get; }
         /// <summary> Public key hash. </summary>
@@ -108,16 +109,18 @@ namespace Azure.ResourceManager.AppService
         /// <summary> Specification for the App Service Environment to use for the certificate. </summary>
         public HostingEnvironmentProfile HostingEnvironmentProfile { get; }
         /// <summary> Key Vault Csm resource Id. </summary>
-        public string KeyVaultId { get; set; }
+        public ResourceIdentifier KeyVaultId { get; set; }
         /// <summary> Key Vault secret name. </summary>
         public string KeyVaultSecretName { get; set; }
         /// <summary> Status of the Key Vault secret. </summary>
         public KeyVaultSecretStatus? KeyVaultSecretStatus { get; }
         /// <summary> Resource ID of the associated App Service plan, formatted as: &quot;/subscriptions/{subscriptionID}/resourceGroups/{groupName}/providers/Microsoft.Web/serverfarms/{appServicePlanName}&quot;. </summary>
-        public string ServerFarmId { get; set; }
+        public ResourceIdentifier ServerFarmId { get; set; }
         /// <summary> CNAME of the certificate to be issued via free certificate. </summary>
         public string CanonicalName { get; set; }
         /// <summary> Method of domain validation for free cert. </summary>
         public string DomainValidationMethod { get; set; }
+        /// <summary> Kind of resource. </summary>
+        public string Kind { get; set; }
     }
 }

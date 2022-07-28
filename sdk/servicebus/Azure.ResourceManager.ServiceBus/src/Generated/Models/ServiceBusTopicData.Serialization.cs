@@ -81,11 +81,11 @@ namespace Azure.ResourceManager.ServiceBus
 
         internal static ServiceBusTopicData DeserializeServiceBusTopicData(JsonElement element)
         {
-            Optional<string> location = default;
+            Optional<AzureLocation> location = default;
             ResourceIdentifier id = default;
             string name = default;
             ResourceType type = default;
-            SystemData systemData = default;
+            Optional<SystemData> systemData = default;
             Optional<long> sizeInBytes = default;
             Optional<DateTimeOffset> createdAt = default;
             Optional<DateTimeOffset> updatedAt = default;
@@ -98,7 +98,7 @@ namespace Azure.ResourceManager.ServiceBus
             Optional<bool> requiresDuplicateDetection = default;
             Optional<TimeSpan> duplicateDetectionHistoryTimeWindow = default;
             Optional<bool> enableBatchedOperations = default;
-            Optional<EntityStatus> status = default;
+            Optional<ServiceBusMessagingEntityStatus> status = default;
             Optional<bool> supportOrdering = default;
             Optional<TimeSpan> autoDeleteOnIdle = default;
             Optional<bool> enablePartitioning = default;
@@ -107,7 +107,12 @@ namespace Azure.ResourceManager.ServiceBus
             {
                 if (property.NameEquals("location"))
                 {
-                    location = property.Value.GetString();
+                    if (property.Value.ValueKind == JsonValueKind.Null)
+                    {
+                        property.ThrowNonNullablePropertyIsNull();
+                        continue;
+                    }
+                    location = new AzureLocation(property.Value.GetString());
                     continue;
                 }
                 if (property.NameEquals("id"))
@@ -127,6 +132,11 @@ namespace Azure.ResourceManager.ServiceBus
                 }
                 if (property.NameEquals("systemData"))
                 {
+                    if (property.Value.ValueKind == JsonValueKind.Null)
+                    {
+                        property.ThrowNonNullablePropertyIsNull();
+                        continue;
+                    }
                     systemData = JsonSerializer.Deserialize<SystemData>(property.Value.ToString());
                     continue;
                 }
@@ -266,7 +276,7 @@ namespace Azure.ResourceManager.ServiceBus
                                 property0.ThrowNonNullablePropertyIsNull();
                                 continue;
                             }
-                            status = property0.Value.GetString().ToEntityStatus();
+                            status = property0.Value.GetString().ToServiceBusMessagingEntityStatus();
                             continue;
                         }
                         if (property0.NameEquals("supportOrdering"))
@@ -313,7 +323,7 @@ namespace Azure.ResourceManager.ServiceBus
                     continue;
                 }
             }
-            return new ServiceBusTopicData(id, name, type, systemData, location.Value, Optional.ToNullable(sizeInBytes), Optional.ToNullable(createdAt), Optional.ToNullable(updatedAt), Optional.ToNullable(accessedAt), Optional.ToNullable(subscriptionCount), countDetails.Value, Optional.ToNullable(defaultMessageTimeToLive), Optional.ToNullable(maxSizeInMegabytes), Optional.ToNullable(maxMessageSizeInKilobytes), Optional.ToNullable(requiresDuplicateDetection), Optional.ToNullable(duplicateDetectionHistoryTimeWindow), Optional.ToNullable(enableBatchedOperations), Optional.ToNullable(status), Optional.ToNullable(supportOrdering), Optional.ToNullable(autoDeleteOnIdle), Optional.ToNullable(enablePartitioning), Optional.ToNullable(enableExpress));
+            return new ServiceBusTopicData(id, name, type, systemData.Value, Optional.ToNullable(sizeInBytes), Optional.ToNullable(createdAt), Optional.ToNullable(updatedAt), Optional.ToNullable(accessedAt), Optional.ToNullable(subscriptionCount), countDetails.Value, Optional.ToNullable(defaultMessageTimeToLive), Optional.ToNullable(maxSizeInMegabytes), Optional.ToNullable(maxMessageSizeInKilobytes), Optional.ToNullable(requiresDuplicateDetection), Optional.ToNullable(duplicateDetectionHistoryTimeWindow), Optional.ToNullable(enableBatchedOperations), Optional.ToNullable(status), Optional.ToNullable(supportOrdering), Optional.ToNullable(autoDeleteOnIdle), Optional.ToNullable(enablePartitioning), Optional.ToNullable(enableExpress), Optional.ToNullable(location));
         }
     }
 }

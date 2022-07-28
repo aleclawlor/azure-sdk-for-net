@@ -13,12 +13,12 @@ using Azure.ResourceManager.Models;
 namespace Azure.ResourceManager.AppService.Models
 {
     /// <summary> ARM resource for a certificate order that is purchased through Azure. </summary>
-    public partial class AppServiceCertificateOrderPatch : ProxyOnlyResource
+    public partial class AppServiceCertificateOrderPatch : ResourceData
     {
         /// <summary> Initializes a new instance of AppServiceCertificateOrderPatch. </summary>
         public AppServiceCertificateOrderPatch()
         {
-            Certificates = new ChangeTrackingDictionary<string, AppServiceCertificate>();
+            Certificates = new ChangeTrackingDictionary<string, AppServiceCertificateInfo>();
             AppServiceCertificateNotRenewableReasons = new ChangeTrackingList<AppServiceCertificateNotRenewableReason>();
         }
 
@@ -27,14 +27,13 @@ namespace Azure.ResourceManager.AppService.Models
         /// <param name="name"> The name. </param>
         /// <param name="resourceType"> The resourceType. </param>
         /// <param name="systemData"> The systemData. </param>
-        /// <param name="kind"> Kind of resource. </param>
         /// <param name="certificates"> State of the Key Vault secret. </param>
         /// <param name="distinguishedName"> Certificate distinguished name. </param>
         /// <param name="domainVerificationToken"> Domain verification token. </param>
         /// <param name="validityInYears"> Duration in years (must be 1). </param>
         /// <param name="keySize"> Certificate key size. </param>
         /// <param name="productType"> Certificate product type. </param>
-        /// <param name="autoRenew"> &lt;code&gt;true&lt;/code&gt; if the certificate should be automatically renewed when it expires; otherwise, &lt;code&gt;false&lt;/code&gt;. </param>
+        /// <param name="isAutoRenew"> &lt;code&gt;true&lt;/code&gt; if the certificate should be automatically renewed when it expires; otherwise, &lt;code&gt;false&lt;/code&gt;. </param>
         /// <param name="provisioningState"> Status of certificate order. </param>
         /// <param name="status"> Current order status. </param>
         /// <param name="signedCertificate"> Signed certificate. </param>
@@ -48,7 +47,8 @@ namespace Azure.ResourceManager.AppService.Models
         /// <param name="appServiceCertificateNotRenewableReasons"> Reasons why App Service Certificate is not renewable at the current moment. </param>
         /// <param name="nextAutoRenewalTimeStamp"> Time stamp when the certificate would be auto renewed next. </param>
         /// <param name="contact"> Contact info. </param>
-        internal AppServiceCertificateOrderPatch(ResourceIdentifier id, string name, ResourceType resourceType, SystemData systemData, string kind, IDictionary<string, AppServiceCertificate> certificates, string distinguishedName, string domainVerificationToken, int? validityInYears, int? keySize, CertificateProductType? productType, bool? autoRenew, ProvisioningState? provisioningState, CertificateOrderStatus? status, CertificateDetails signedCertificate, string csr, CertificateDetails intermediate, CertificateDetails root, string serialNumber, DateTimeOffset? lastCertificateIssuanceOn, DateTimeOffset? expirationOn, bool? isPrivateKeyExternal, IReadOnlyList<AppServiceCertificateNotRenewableReason> appServiceCertificateNotRenewableReasons, DateTimeOffset? nextAutoRenewalTimeStamp, CertificateOrderContact contact) : base(id, name, resourceType, systemData, kind)
+        /// <param name="kind"> Kind of resource. </param>
+        internal AppServiceCertificateOrderPatch(ResourceIdentifier id, string name, ResourceType resourceType, SystemData systemData, IDictionary<string, AppServiceCertificateInfo> certificates, string distinguishedName, string domainVerificationToken, int? validityInYears, int? keySize, CertificateProductType? productType, bool? isAutoRenew, ProvisioningState? provisioningState, CertificateOrderStatus? status, CertificateDetails signedCertificate, string csr, CertificateDetails intermediate, CertificateDetails root, string serialNumber, DateTimeOffset? lastCertificateIssuanceOn, DateTimeOffset? expirationOn, bool? isPrivateKeyExternal, IReadOnlyList<AppServiceCertificateNotRenewableReason> appServiceCertificateNotRenewableReasons, DateTimeOffset? nextAutoRenewalTimeStamp, CertificateOrderContact contact, string kind) : base(id, name, resourceType, systemData)
         {
             Certificates = certificates;
             DistinguishedName = distinguishedName;
@@ -56,7 +56,7 @@ namespace Azure.ResourceManager.AppService.Models
             ValidityInYears = validityInYears;
             KeySize = keySize;
             ProductType = productType;
-            AutoRenew = autoRenew;
+            IsAutoRenew = isAutoRenew;
             ProvisioningState = provisioningState;
             Status = status;
             SignedCertificate = signedCertificate;
@@ -70,10 +70,11 @@ namespace Azure.ResourceManager.AppService.Models
             AppServiceCertificateNotRenewableReasons = appServiceCertificateNotRenewableReasons;
             NextAutoRenewalTimeStamp = nextAutoRenewalTimeStamp;
             Contact = contact;
+            Kind = kind;
         }
 
         /// <summary> State of the Key Vault secret. </summary>
-        public IDictionary<string, AppServiceCertificate> Certificates { get; }
+        public IDictionary<string, AppServiceCertificateInfo> Certificates { get; }
         /// <summary> Certificate distinguished name. </summary>
         public string DistinguishedName { get; set; }
         /// <summary> Domain verification token. </summary>
@@ -85,7 +86,7 @@ namespace Azure.ResourceManager.AppService.Models
         /// <summary> Certificate product type. </summary>
         public CertificateProductType? ProductType { get; set; }
         /// <summary> &lt;code&gt;true&lt;/code&gt; if the certificate should be automatically renewed when it expires; otherwise, &lt;code&gt;false&lt;/code&gt;. </summary>
-        public bool? AutoRenew { get; set; }
+        public bool? IsAutoRenew { get; set; }
         /// <summary> Status of certificate order. </summary>
         public ProvisioningState? ProvisioningState { get; }
         /// <summary> Current order status. </summary>
@@ -112,5 +113,7 @@ namespace Azure.ResourceManager.AppService.Models
         public DateTimeOffset? NextAutoRenewalTimeStamp { get; }
         /// <summary> Contact info. </summary>
         public CertificateOrderContact Contact { get; }
+        /// <summary> Kind of resource. </summary>
+        public string Kind { get; set; }
     }
 }

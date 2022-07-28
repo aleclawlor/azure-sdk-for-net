@@ -20,13 +20,13 @@ namespace Azure.ResourceManager.Authorization
             ResourceIdentifier id = default;
             string name = default;
             ResourceType type = default;
-            SystemData systemData = default;
+            Optional<SystemData> systemData = default;
             Optional<string> scope = default;
-            Optional<string> roleDefinitionId = default;
+            Optional<ResourceIdentifier> roleDefinitionId = default;
             Optional<string> principalId = default;
             Optional<PrincipalType> principalType = default;
-            Optional<string> roleAssignmentScheduleId = default;
-            Optional<string> originRoleAssignmentId = default;
+            Optional<ResourceIdentifier> roleAssignmentScheduleId = default;
+            Optional<ResourceIdentifier> originRoleAssignmentId = default;
             Optional<RoleAssignmentScheduleInstanceStatus> status = default;
             Optional<DateTimeOffset> startDateTime = default;
             Optional<DateTimeOffset> endDateTime = default;
@@ -57,6 +57,11 @@ namespace Azure.ResourceManager.Authorization
                 }
                 if (property.NameEquals("systemData"))
                 {
+                    if (property.Value.ValueKind == JsonValueKind.Null)
+                    {
+                        property.ThrowNonNullablePropertyIsNull();
+                        continue;
+                    }
                     systemData = JsonSerializer.Deserialize<SystemData>(property.Value.ToString());
                     continue;
                 }
@@ -76,7 +81,12 @@ namespace Azure.ResourceManager.Authorization
                         }
                         if (property0.NameEquals("roleDefinitionId"))
                         {
-                            roleDefinitionId = property0.Value.GetString();
+                            if (property0.Value.ValueKind == JsonValueKind.Null)
+                            {
+                                property0.ThrowNonNullablePropertyIsNull();
+                                continue;
+                            }
+                            roleDefinitionId = new ResourceIdentifier(property0.Value.GetString());
                             continue;
                         }
                         if (property0.NameEquals("principalId"))
@@ -96,12 +106,22 @@ namespace Azure.ResourceManager.Authorization
                         }
                         if (property0.NameEquals("roleAssignmentScheduleId"))
                         {
-                            roleAssignmentScheduleId = property0.Value.GetString();
+                            if (property0.Value.ValueKind == JsonValueKind.Null)
+                            {
+                                property0.ThrowNonNullablePropertyIsNull();
+                                continue;
+                            }
+                            roleAssignmentScheduleId = new ResourceIdentifier(property0.Value.GetString());
                             continue;
                         }
                         if (property0.NameEquals("originRoleAssignmentId"))
                         {
-                            originRoleAssignmentId = property0.Value.GetString();
+                            if (property0.Value.ValueKind == JsonValueKind.Null)
+                            {
+                                property0.ThrowNonNullablePropertyIsNull();
+                                continue;
+                            }
+                            originRoleAssignmentId = new ResourceIdentifier(property0.Value.GetString());
                             continue;
                         }
                         if (property0.NameEquals("status"))
@@ -198,7 +218,7 @@ namespace Azure.ResourceManager.Authorization
                     continue;
                 }
             }
-            return new RoleAssignmentScheduleInstanceData(id, name, type, systemData, scope.Value, roleDefinitionId.Value, principalId.Value, Optional.ToNullable(principalType), roleAssignmentScheduleId.Value, originRoleAssignmentId.Value, Optional.ToNullable(status), Optional.ToNullable(startDateTime), Optional.ToNullable(endDateTime), linkedRoleEligibilityScheduleId.Value, linkedRoleEligibilityScheduleInstanceId.Value, Optional.ToNullable(assignmentType), Optional.ToNullable(memberType), condition.Value, conditionVersion.Value, Optional.ToNullable(createdOn), expandedProperties.Value);
+            return new RoleAssignmentScheduleInstanceData(id, name, type, systemData.Value, scope.Value, roleDefinitionId.Value, principalId.Value, Optional.ToNullable(principalType), roleAssignmentScheduleId.Value, originRoleAssignmentId.Value, Optional.ToNullable(status), Optional.ToNullable(startDateTime), Optional.ToNullable(endDateTime), linkedRoleEligibilityScheduleId.Value, linkedRoleEligibilityScheduleInstanceId.Value, Optional.ToNullable(assignmentType), Optional.ToNullable(memberType), condition.Value, conditionVersion.Value, Optional.ToNullable(createdOn), expandedProperties.Value);
         }
     }
 }
